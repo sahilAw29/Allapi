@@ -202,7 +202,7 @@ const apiProxyMap = {
     'ff': (p) => `https://ft-osint-api.duckdns.org/api/ff?key=${MASTER_KEYS.ftosint}&uid=${p.uid}`,
     'aadhar': (p) => `https://ft-osint-api.duckdns.org/api/aadhar?key=${MASTER_KEYS.ftosint}&num=${p.num}`,
     'ai-image': (p) => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${p.prompt}`,
-    'leak': (p) => `https://leakapi.dpdns.org/chain?q=${p.number}/key=${MASTER_KEYS.truecallerLeak}`,
+    'leak': (p) => `https://leakapi.dpdns.org/chain?q=${p.number}`,
     'mistral': `mistral-direct`,
     'veh-to-num': (p) => `https://vehicleinfo.noobgamingv40.workers.dev/fetch?vehicle=${p.vehicle || p.term}`
 };
