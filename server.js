@@ -205,7 +205,7 @@ function requireHeadAdmin(req, res, next) {
 const apiProxyMap = {
     'leakpro': (p) => `https://raxxosint.onrender.com/leakosint?key=Customer&quiry=${p.number}`,
     'vehicle-info': (p) => `https://leakapi.dpdns.org/vehicle-info?registration_number=${p.vehicle || p.q || p.term}`,
-    'telegram-num': (p) => `https://tg-to-num-501x.onrender.com/api/tg?key=permanant&info=${p.term || p.id || p.username}`,
+    'telegram-num': (p) => `https://tg-to-num-production.up.railway.app/tg?key=m3tary&num=${p.term || p.id || p.username}`,
     'family-info': (p) => `https://osint.invalidayushh.workers.dev/adhar?key=Sahil&q=${p.q || p.term || p.id}`,
     'number-info': (p) => `https://osint.invalidayushh.workers.dev/num?key=Sahil&q=${p.q || p.number || p.num}`,
     'aadhar-info': (p) => `https://osint.invalidayushh.workers.dev/adhar?key=Sahil&q=${p.q || p.num || p.aadhar}`,
