@@ -17,6 +17,7 @@ const app = express();
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTNXERA';
 const NEW_BASE = 'https://sahilcc.dpdns.org';
+const BACKUP_BASE = 'https://sahilcc.ddns.net';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
@@ -122,7 +123,7 @@ db.serialize(() => {
         maintenance_message TEXT DEFAULT 'API is currently under maintenance.'
     )`);
 
-    // Safe migrations — these silently fail if column already exists
+    // Safe migrations
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN api_overrides TEXT DEFAULT '{}'`, () => {});
@@ -151,7 +152,7 @@ db.serialize(() => {
                 ['num2',         '🔍 Number Info v2',      '/api/num2',         '{"number":""}',  '{"number":"9876543210"}',   'Advanced number information'],
                 ['num-india',    '🇮🇳 Indian Number',       '/api/num-india',    '{"number":""}',  '{"number":"9876543210"}',   'Indian mobile number details'],
                 ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',  '{"number":"03001234567"}',  'Pakistani mobile number'],
-                ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chained number info'],
+                ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chain phone number lookup'],
                 ['bom',          '💥 BOM Lookup',          '/api/bom',          '{"number":""}',  '{"number":"9876543210"}',   'BOM number lookup'],
                 // ── Identity ──────────────────────────────────────────────────
                 ['aadhr',        '🪪 Aadhaar Info',        '/api/aadhr',        '{"q":""}',       '{"q":"123456789012"}',      'Aadhaar information lookup'],
@@ -236,64 +237,279 @@ const formatApis = (apis) => apis.map(api => {
     return { ...api, param_name: Object.keys(params)[0] || 'param' };
 });
 
+// ─── PROXY HELPER WITH FALLBACK ─────────────────────────────────────────────
+async function proxyRequest(url, timeout = 30000) {
+    try {
+        const response = await axios.get(url, { 
+            timeout: timeout,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+        return { data: response.data, status: response.status };
+    } catch (err) {
+        if (err.response) {
+            return { data: err.response.data, status: err.response.status };
+        }
+        throw err;
+    }
+}
+
+async function proxyWithFallback(urls, timeout = 30000) {
+    let lastError = null;
+    for (const url of urls) {
+        try {
+            const result = await proxyRequest(url, timeout);
+            if (result.status >= 200 && result.status < 300) {
+                return result;
+            }
+            lastError = result;
+        } catch (err) {
+            lastError = err;
+        }
+    }
+    throw lastError || new Error('All proxy attempts failed');
+}
+
 // ─── API PROXY MAP ────────────────────────────────────────────────────────────
 const apiProxyMap = {
     // ── Phone / Number ────────────────────────────────────────────────────────
-    'tg':           p => `${NEW_BASE}/api/tg?number=${getParam(p,'number','term','id','username','num','query','q')}`,
-    'num':          p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
-    'num2':         p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
-    'num-india':    p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
-    'num-pak':      p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
-    'leak':        p => `${NEW_BASE}/api/leak?number=${getParam(p,'number','query','q','num','term')}`,
-    'bom':          p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
-    // aliases kept for backward compat
-    'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
-    'number-info':  p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
-    'num-newinfo':  p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'tg': (p) => {
+        const number = getParam(p, 'number', 'term', 'id', 'username', 'num', 'query', 'q');
+        return [
+            `${NEW_BASE}/api/tg?number=${number}`,
+            `${BACKUP_BASE}/api/tg?number=${number}`
+        ];
+    },
+    'num': (p) => {
+        const number = getParam(p, 'q', 'number', 'num', 'query', 'term');
+        return [
+            `${NEW_BASE}/api/num?number=${number}`,
+            `${BACKUP_BASE}/api/num?number=${number}`
+        ];
+    },
+    'num2': (p) => {
+        const number = getParam(p, 'q', 'number', 'num', 'query', 'term');
+        return [
+            `${NEW_BASE}/api/num2?number=${number}`,
+            `${BACKUP_BASE}/api/num2?number=${number}`
+        ];
+    },
+    'num-india': (p) => {
+        const number = getParam(p, 'num', 'number', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/num-india?number=${number}`,
+            `${BACKUP_BASE}/api/num-india?number=${number}`
+        ];
+    },
+    'num-pak': (p) => {
+        const number = getParam(p, 'number', 'num', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/num-pak?number=${number}`,
+            `${BACKUP_BASE}/api/num-pak?number=${number}`
+        ];
+    },
+    
+    // ─── CHAIN API - SEPARATE FROM LEAK ──────────────────────────────────────
+    'chain': (p) => {
+        const number = getParam(p, 'number', 'query', 'q', 'num', 'term');
+        return [
+            `${NEW_BASE}/api/chain?number=${number}`,
+            `${NEW_BASE}/api/chain?q=${number}`,
+            `${BACKUP_BASE}/api/chain?number=${number}`,
+            `${NEW_BASE}/api/leakchain?number=${number}` // fallback
+        ];
+    },
+    
+    'bom': (p) => {
+        const number = getParam(p, 'number', 'num', 'q', 'query', 'term');
+        return [
+            `${NEW_BASE}/api/bom?number=${number}`,
+            `${BACKUP_BASE}/api/bom?number=${number}`
+        ];
+    },
 
     // ── Identity ──────────────────────────────────────────────────────────────
-    'aadhr':        p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'q','adhar','term','id','query','number')}`,
-    'pan':          p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
-    'family':       p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
-    'email-info':   p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
+    'aadhr': (p) => {
+        const q = getParam(p, 'q', 'adhar', 'term', 'id', 'query', 'number');
+        return [
+            `${NEW_BASE}/api/adhar?adhar=${q}`,
+            `${NEW_BASE}/api/aadhr?q=${q}`,
+            `${BACKUP_BASE}/api/adhar?adhar=${q}`
+        ];
+    },
+    'pan': (p) => {
+        const pan = getParam(p, 'pan', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/pan?pan=${pan}`,
+            `${NEW_BASE}/api/pan?q=${pan}`,
+            `${BACKUP_BASE}/api/pan?pan=${pan}`
+        ];
+    },
+    'family': (p) => {
+        const term = getParam(p, 'term', 'adhar', 'q', 'query', 'number');
+        return [
+            `${NEW_BASE}/api/family?adhar=${term}`,
+            `${BACKUP_BASE}/api/family?adhar=${term}`
+        ];
+    },
+    'email-info': (p) => {
+        const email = getParam(p, 'q', 'email', 'query');
+        return [
+            `${NEW_BASE}/api/email?email=${email}`,
+            `${NEW_BASE}/api/email-info?q=${email}`,
+            `${BACKUP_BASE}/api/email?email=${email}`
+        ];
+    },
 
     // ── Vehicle ───────────────────────────────────────────────────────────────
-    'veh-to-num':   p => `${NEW_BASE}/api/veh-info?registration_number=${getParam(p,'vehicle','term','q','query')}`,
-    'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
-    'vehicle':      p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
-    'rc':           p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
+    'veh-to-num': (p) => {
+        const vehicle = getParam(p, 'vehicle', 'term', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/veh-info?registration_number=${vehicle}`,
+            `${BACKUP_BASE}/api/veh-info?registration_number=${vehicle}`
+        ];
+    },
+    'vehicle-info': (p) => {
+        const vehicle = getParam(p, 'vehicle', 'registration_number', 'q', 'term', 'query');
+        return [
+            `${NEW_BASE}/api/veh?vehicle=${vehicle}`,
+            `${NEW_BASE}/api/vehicle-info?vehicle=${vehicle}`,
+            `${BACKUP_BASE}/api/veh?vehicle=${vehicle}`
+        ];
+    },
+    'rc': (p) => {
+        const owner = getParam(p, 'owner', 'vehicle', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/rc?registration_number=${owner}`,
+            `${BACKUP_BASE}/api/rc?registration_number=${owner}`
+        ];
+    },
 
     // ── Social / Gaming ───────────────────────────────────────────────────────
-    'insta':        p => `${NEW_BASE}/api/insta?username=${getParam(p,'username','q','query')}`,
-    'snap':         p => `${NEW_BASE}/api/snap?username=${getParam(p,'username','q','query')}`,
-    'git':          p => `${NEW_BASE}/api/git?username=${getParam(p,'username','q','query')}`,
-    'bgmi':         p => `${NEW_BASE}/api/bgmi?uid=${getParam(p,'uid','q','query')}`,
-    'ff':           p => `${NEW_BASE}/api/ff?uid=${getParam(p,'uid','q','query')}`,
+    'insta': (p) => {
+        const username = getParam(p, 'username', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/insta?username=${username}`,
+            `${NEW_BASE}/api/instagram?username=${username}`,
+            `${BACKUP_BASE}/api/insta?username=${username}`
+        ];
+    },
+    'snap': (p) => {
+        const username = getParam(p, 'username', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/snap?username=${username}`,
+            `${NEW_BASE}/api/snapchat?username=${username}`,
+            `${BACKUP_BASE}/api/snap?username=${username}`
+        ];
+    },
+    'git': (p) => {
+        const username = getParam(p, 'username', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/git?username=${username}`,
+            `${NEW_BASE}/api/github?username=${username}`,
+            `${BACKUP_BASE}/api/git?username=${username}`
+        ];
+    },
+    'bgmi': (p) => {
+        const uid = getParam(p, 'uid', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/bgmi?uid=${uid}`,
+            `${NEW_BASE}/api/bgmi?userid=${uid}`,
+            `${BACKUP_BASE}/api/bgmi?uid=${uid}`
+        ];
+    },
+    'ff': (p) => {
+        const uid = getParam(p, 'uid', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/ff?uid=${uid}`,
+            `${NEW_BASE}/api/freefire?uid=${uid}`,
+            `${BACKUP_BASE}/api/ff?uid=${uid}`
+        ];
+    },
 
     // ── Tech / Other ──────────────────────────────────────────────────────────
-    'ip':           p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
-    'bank':         p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
-    'pincode':      p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
-    'leak':         p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','term')}`,
-    'leakpro':      p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','quiry','term')}`,
-    'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
+    'ip': (p) => {
+        const ip = getParam(p, 'ip', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/ip?ip=${ip}`,
+            `${NEW_BASE}/api/ipgeo?ip=${ip}`,
+            `${BACKUP_BASE}/api/ip?ip=${ip}`
+        ];
+    },
+    'bank': (p) => {
+        const ifsc = getParam(p, 'ifsc', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/ifsc?ifsc=${ifsc}`,
+            `${NEW_BASE}/api/bank?ifsc=${ifsc}`,
+            `${BACKUP_BASE}/api/ifsc?ifsc=${ifsc}`
+        ];
+    },
+    'pincode': (p) => {
+        const pin = getParam(p, 'pin', 'pincode', 'q', 'query');
+        return [
+            `${NEW_BASE}/api/pin?pincode=${pin}`,
+            `${NEW_BASE}/api/pincode?pin=${pin}`,
+            `${BACKUP_BASE}/api/pin?pincode=${pin}`
+        ];
+    },
+    
+    // ─── LEAK APIs - Fixed with multiple fallback paths ───────────────────────
+    'leak': (p) => {
+        const number = getParam(p, 'number', 'query', 'q', 'num', 'term');
+        return [
+            `${NEW_BASE}/api/leak?number=${number}`,
+            `${NEW_BASE}/api/leak?q=${number}`,
+            `${NEW_BASE}/api/leak?query=${number}`,
+            `${NEW_BASE}/leak?number=${number}`,
+            `${BACKUP_BASE}/api/leak?number=${number}`,
+            `${BACKUP_BASE}/leak?number=${number}`
+        ];
+    },
+    'leakpro': (p) => {
+        const number = getParam(p, 'number', 'query', 'q', 'num', 'quiry', 'term');
+        return [
+            `${NEW_BASE}/api/leakpro?query=${number}`,
+            `${NEW_BASE}/api/leakpro?number=${number}`,
+            `${NEW_BASE}/api/leakpro?q=${number}`,
+            `${NEW_BASE}/leakpro?query=${number}`,
+            `${BACKUP_BASE}/api/leakpro?query=${number}`,
+            `${BACKUP_BASE}/leakpro?query=${number}`
+        ];
+    },
+    
+    'ai-image': (p) => {
+        const prompt = getParam(p, 'prompt', 'q', 'query');
+        return [`https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${prompt}`];
+    },
 
-    // ── Mistral — handles its own response ────────────────────────────────────
+    // ─── Mistral — handles its own response ────────────────────────────────────
     'mistral': async (p, res, keyData, rateLimitInfo) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
-        const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
-            model: 'mistral-small-latest',
-            messages: [{ role: 'user', content: message }],
-            max_tokens: 1024
-        }, {
-            headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
-            timeout: 30000
-        });
-        const out = { success: true, reply: r.data.choices?.[0]?.message?.content || '', owner: OWNER, channel: CHANNEL };
-        if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
-        if ((keyData.note_enabled == 1) && keyData.key_note) out.key_note = keyData.key_note;
-        return res.json(out);
+        
+        try {
+            const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+                model: 'mistral-small-latest',
+                messages: [{ role: 'user', content: message }],
+                max_tokens: 1024
+            }, {
+                headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
+                timeout: 30000
+            });
+            const out = { 
+                success: true, 
+                reply: r.data.choices?.[0]?.message?.content || '', 
+                owner: OWNER, 
+                channel: CHANNEL 
+            };
+            if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
+            if ((keyData.note_enabled == 1) && keyData.key_note) out.key_note = keyData.key_note;
+            return res.json(out);
+        } catch (err) {
+            console.error('Mistral error:', err);
+            return res.status(500).json({ error: 'Mistral request failed', details: err.message });
+        }
     }
 };
 
@@ -615,7 +831,7 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
     }
 });
 
-// ─── HEATMAP DATA — 8 weeks of daily hit counts ───────────────────────────────
+// ─── HEATMAP DATA ─────────────────────────────────────────────────────────────
 app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     try {
         const rows = await dbAll(
@@ -685,7 +901,6 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
             allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
     }
 
-    // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
     const isUnlimited = ['true','on','1'].includes(String(unlimited_hits));
     const isOneTime   = ['true','on','1'].includes(String(one_time));
     const maxHits     = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
@@ -728,7 +943,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── EDIT KEY — now supports usage mode (unlimited/rate-limited/one-time) + per-key API overrides ──
+// ─── EDIT KEY ─────────────────────────────────────────────────────────────────
 app.post('/admin/edit-key', requireAuth, async (req, res) => {
     const {
         key_id, name, expiry, unlimited_hits, one_time, max_hits: raw_max_hits,
@@ -742,7 +957,6 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
         const existing = await dbGet('SELECT * FROM api_keys WHERE id = ?', [key_id]);
         if (!existing) return res.status(404).json({ success: false, error: 'Key not found' });
 
-        // expiry — edit form doesn't expose this yet, so default is always "keep existing"
         let keepExpiry = true;
         let expires_at = null;
         if (expiry && expiry !== 'keep' && expiry !== 'never') {
@@ -764,7 +978,6 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                 allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
         }
 
-        // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
         const isUnlimited = ['true','on','1',1].includes(unlimited_hits);
         const isOneTime   = ['true','on','1',1].includes(one_time);
         const maxHits      = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
@@ -773,7 +986,6 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
         const perDay       = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100);
         const perMin       = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0);
 
-        // ── Per-key API overrides — validate incoming JSON, fall back to existing on parse failure ──
         let overridesJson = existing.api_overrides || '{}';
         if (api_overrides !== undefined) {
             try {
@@ -782,8 +994,6 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
             } catch(_) { overridesJson = '{}'; }
         }
 
-        // ── Auto-reactivate: if the key was expired purely because of the hit cap, and the new
-        //    mode no longer puts it over that cap, bring it back to active automatically ──
         let newStatus = status || existing.status;
         if (!status && existing.status === 'expired') {
             const stillOverCap = !isUnlimited && maxHits > 0 && existing.hits >= maxHits;
@@ -956,30 +1166,6 @@ app.post('/head-admin/delete-user', requireHeadAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
-// ─── MIGRATE ROUTE — run once then delete ────────────────────────────────────
-app.get('/admin/migrate-apis', requireAuth, async (req, res) => {
-    const newApis = [
-        ['tg',    '📞 TG to Number',  '/api/tg',    '{"number":""}','{"number":"9876543210"}','Telegram number lookup'],
-        ['num2',  '🔍 Number Info v2','/api/num2',  '{"number":""}','{"number":"9876543210"}','Advanced number information'],
-        ['bom',   '💥 BOM Lookup',    '/api/bom',   '{"number":""}','{"number":"9876543210"}','BOM number lookup'],
-        ['snap',  '👻 Snapchat Info', '/api/snap',  '{"username":""}','{"username":"john_doe"}','Snapchat profile lookup'],
-        ['chain', '🔗 Chain Lookup',  '/api/chain', '{"number":""}','{"number":"9876543210"}','Chained number info'],
-    ];
-    try {
-        for (const row of newApis) {
-            await dbRun(
-                `INSERT OR IGNORE INTO available_apis
-                 (name,display_name,endpoint,required_params,example_params,description,is_active,custom_message)
-                 VALUES (?,?,?,?,?,?,1,'API is currently turned off.')`,
-                row
-            );
-        }
-        res.json({ success: true, message: 'Migration complete. Remove this route.' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // ─── MAIN API ENDPOINT ────────────────────────────────────────────────────────
 app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     const userKey  = req.query.key || req.body.key;
@@ -991,7 +1177,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (!userKey)
             return res.status(401).json({ error: 'API key required', contact: OWNER });
 
-        // Check global API enabled status (affects ALL keys)
+        // Check global API enabled status
         const targetApi = await dbGet(
             'SELECT * FROM available_apis WHERE name = ? OR endpoint = ?',
             [endpoint, `/api/${endpoint}`]
@@ -999,7 +1185,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (targetApi && targetApi.is_active === 0)
             return res.json({ status: false, message: targetApi.custom_message || 'This API is currently turned off.' });
 
-        // Validate key (case-insensitive)
+        // Validate key
         const keyData = await dbGet('SELECT * FROM api_keys WHERE UPPER(key) = UPPER(?)', [userKey]);
         if (!keyData)
             return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
@@ -1008,14 +1194,14 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (keyData.status !== 'active')
             return res.status(403).json({ error: `Key status is ${keyData.status}`, contact: OWNER });
 
-        // Check allowed APIs for this key
+        // Check allowed APIs
         try {
             const allowed = JSON.parse(keyData.allowed_apis || '["all"]');
             if (!allowed.includes('all') && !allowed.includes(endpoint))
                 return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
         } catch(_) {}
 
-        // Check per-key API override — this specific key may have this specific API turned off
+        // Check per-key API override
         try {
             const overrides = JSON.parse(keyData.api_overrides || '{}');
             if (overrides[endpoint] && overrides[endpoint].enabled === false) {
@@ -1029,9 +1215,8 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             return res.status(403).json({ error: 'Key expired', contact: OWNER });
         }
 
-        // Check expiry (hit-count-based) — max_hits 0 = unlimited
+        // Check expiry (hit-count-based)
         if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
-            // auto-disable on hit-count expire
             dbRun('UPDATE api_keys SET status = "expired", api_enabled = 0 WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({
                 success: false,
@@ -1094,7 +1279,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                ON CONFLICT(api_key,date) DO UPDATE SET calls = calls + 1`, [userKey, today]).catch(() => {});
         dbRun('UPDATE api_keys SET hits = hits + 1 WHERE id = ?', [keyData.id]).catch(() => {});
 
-        // ── WebSocket broadcast — real-time hit notification ───────────────────
+        // WebSocket broadcast
         wsBroadcast({
             type     : 'hit',
             endpoint : endpoint,
@@ -1118,12 +1303,12 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             return;
         }
 
-        // Standard proxy
+        // Standard proxy with fallback
         try {
-            const targetUrl  = proxyFn(params);
-            const upstream   = await axios.get(targetUrl, { timeout: 30000 });
-            const responseMs = Date.now() - reqStart;
-            let data         = cleanResponse(upstream.data);
+            const urls        = proxyFn(params);
+            const upstream    = await proxyWithFallback(Array.isArray(urls) ? urls : [urls]);
+            const responseMs  = Date.now() - reqStart;
+            let data          = cleanResponse(upstream.data);
 
             if (Object.keys(rateLimitInfo).length) data.rate_limit = rateLimitInfo;
             if (keyData.note_enabled == 1 && keyData.key_note) data.key_note = keyData.key_note;
@@ -1138,7 +1323,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             dbRun(`INSERT INTO analytics (api_key,endpoint,status_code,ip_address,response_time,date)
                    VALUES (?,?,?,?,?,?)`,
                 [userKey, endpoint, 500, req.ip, Date.now() - reqStart, today]).catch(() => {});
-            res.status(500).json({ error: 'Upstream API failed', details: err.message });
+            res.status(500).json({ error: 'Upstream API failed', details: err.message || 'All proxy attempts failed' });
         }
 
     } catch (err) {
@@ -1169,7 +1354,7 @@ function wsBroadcast(payload) {
     });
 }
 
-// keep-alive ping every 25s — stops proxies from dropping idle connections
+// keep-alive ping every 25s
 setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === 1) client.ping();
