@@ -1,156 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Head Admin Dashboard - OSINT API Hub</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e27; color: #fff; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; margin-bottom: 30px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; text-align: center; }
-        .stat-number { font-size: 2.5em; font-weight: bold; color: #667eea; }
-        .card { background: #1a1f3a; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #2a2f4a; }
-        th { background: #667eea; color: #fff; }
-        .btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .btn-danger { background: #e74c3c; color: white; }
-        .btn-success { background: #2ecc71; color: white; }
-        .btn-primary { background: #3498db; color: white; }
-        input, select { padding: 8px; border-radius: 5px; border: 1px solid #2a2f4a; background: #0a0e27; color: #fff; margin: 5px; }
-        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logout { background: #e74c3c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
-        .badge { padding: 3px 8px; border-radius: 5px; font-size: 12px; }
-        .badge-success { background: #2ecc71; }
-        .badge-danger { background: #e74c3c; }
-        .badge-warning { background: #f39c12; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Head Admin — OSINT API Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    body{background:#080c14;font-family:'Plus Jakarta Sans',sans-serif;color:#f3f4f6;}
+    .glass{background:rgba(17,24,39,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.06);}
+    .cs::-webkit-scrollbar{width:4px;height:4px;}.cs::-webkit-scrollbar-track{background:#080c14;}.cs::-webkit-scrollbar-thumb{background:#1f2937;border-radius:4px;}
+  </style>
 </head>
-<body>
-    <div class="container">
-        <div class="nav">
-            <h1>👑 Head Admin Dashboard</h1>
-            <a href="/logout" class="logout">🚪 Logout</a>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number"><%= admins.length %></div>
-                <div>Total Admins</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><%= keys.length %></div>
-                <div>Total API Keys</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><%= totalHits %></div>
-                <div>Total API Calls</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><%= todayStats.total_calls_today || 0 %></div>
-                <div>Today's Calls</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><%= monthStats.total_calls_month || 0 %></div>
-                <div>This Month</div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2>👥 Admin Management</h2>
-            <form id="createAdminForm">
-                <input type="text" id="adminUsername" placeholder="Username" required>
-                <input type="password" id="adminPassword" placeholder="Password" required>
-                <select id="adminRole">
-                    <option value="admin">Admin</option>
-                </select>
-                <button type="submit" class="btn btn-success">Create Admin</button>
-            </form>
-            <div id="adminMessage"></div>
-            
-            <h3 style="margin-top: 20px;">Existing Admins</h3>
-            <table>
-                <thead>
-                    <tr><th>Username</th><th>Role</th><th>Created By</th><th>Created At</th><th>Action</th></tr>
-                </thead>
-                <tbody>
-                    <% admins.forEach(admin => { %>
-                    <tr>
-                        <td><%= admin.username %></td>
-                        <td><span class="badge badge-warning"><%= admin.role %></span></td>
-                        <td><%= admin.created_by || 'system' %></td>
-                        <td><%= new Date(admin.created_at).toLocaleString() %></td>
-                        <td><button onclick="removeAdmin(<%= admin.id %>)" class="btn btn-danger">Remove</button></td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="card">
-            <h2>📊 API Keys & Call Statistics</h2>
-            <table>
-                <thead>
-                    <tr><th>API Key</th><th>Name</th><th>Total Hits</th><th>Today</th><th>Yesterday</th><th>This Month</th><th>Status</th><th>Expiry</th></tr>
-                </thead>
-                <tbody>
-                    <% keys.forEach(key => { %>
-                    <tr>
-                        <td><code><%= key.key %></code></td>
-                        <td><%= key.name %></td>
-                        <td><%= key.hits || 0 %></td>
-                        <td><span class="badge badge-success"><%= key.today_calls || 0 %></span></td>
-                        <td><%= key.yesterday_calls || 0 %></td>
-                        <td><%= key.monthly_calls || 0 %></td>
-                        <td><span class="badge <%= key.status === 'active' ? 'badge-success' : 'badge-danger' %>"><%= key.status %></span></td>
-                        <td><%= key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never' %></td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
-        </div>
+<body class="min-h-screen cs">
+<%- include('_nav', { currentPage: 'head-admin', user: user }) %>
+<main class="pt-20 max-w-[1400px] mx-auto px-4 sm:px-6 pb-12">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div><div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-crown text-amber-400 text-lg"></i><h1 class="text-2xl font-extrabold text-white">Head Admin</h1></div><p class="text-sm text-gray-500">Full system control — manage admins, keys & settings</p></div>
+    <button onclick="openModal('generateModal')" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-xl text-sm shadow-lg shadow-amber-500/20 transition"><i class="fa-solid fa-plus"></i> Generate Key</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="glass rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Keys</span><div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20"><i class="fa-solid fa-key text-indigo-400 text-sm"></i></div></div><div class="text-3xl font-extrabold text-white font-mono"><%=keys.length%></div></div>
+    <div class="glass rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Hits</span><div class="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20"><i class="fa-solid fa-bolt text-cyan-400 text-sm"></i></div></div><div class="text-3xl font-extrabold text-cyan-400 font-mono"><%=totalHits||0%></div></div>
+    <div class="glass rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Admins</span><div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20"><i class="fa-solid fa-users-gear text-amber-400 text-sm"></i></div></div><div class="text-3xl font-extrabold text-amber-400 font-mono"><%=admins.length%></div></div>
+    <div class="glass rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Endpoints</span><div class="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20"><i class="fa-solid fa-cubes text-purple-400 text-sm"></i></div></div><div class="text-3xl font-extrabold text-purple-400 font-mono"><%=apis.length%></div></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Request Volume</h3><p class="text-xs text-gray-500 mb-4">Last 7 days</p><canvas id="dailyChart" height="180"></canvas></div>
+    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Top Endpoints</h3><p class="text-xs text-gray-500 mb-4">By hit count</p><canvas id="endpointsChart" height="180"></canvas></div>
+  </div>
+
+  <!-- Settings + Recent Logins -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+    <div class="glass rounded-2xl p-6">
+      <div class="flex items-center gap-2 mb-5"><i class="fa-solid fa-sliders text-amber-400"></i><h3 class="text-sm font-bold text-white">System Settings</h3></div>
+      <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Maintenance Banner</label>
+      <div class="flex gap-3">
+        <input type="text" id="maintenanceMessage" value="<%=settings&&settings.maintenance_message?settings.maintenance_message:''%>" placeholder="Maintenance message..." class="flex-1 bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition">
+        <button onclick="saveMasterSettings()" class="px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+      </div>
+      <div id="settingsSaveStatus" class="mt-2 text-xs font-mono"></div>
     </div>
-    
-    <script>
-        document.getElementById('createAdminForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-            const role = document.getElementById('adminRole').value;
-            
-            const response = await fetch('/head-admin/create-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                document.getElementById('adminMessage').innerHTML = '<p style="color:green;">✅ ' + data.message + '</p>';
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                document.getElementById('adminMessage').innerHTML = '<p style="color:red;">❌ ' + data.error + '</p>';
-            }
-        });
-        
-        async function removeAdmin(id) {
-            if (confirm('Are you sure you want to remove this admin?')) {
-                const response = await fetch('/head-admin/remove-admin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_id: id })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            }
-        }
-    </script>
+    <div class="glass rounded-2xl overflow-hidden">
+      <div class="p-5 border-b border-white/5 flex items-center justify-between">
+        <div><h3 class="text-sm font-bold text-white">Recent Logins</h3><p class="text-xs text-gray-500 mt-0.5">Latest access events</p></div>
+        <a href="/admin/login-history" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">View All <i class="fa-solid fa-arrow-right text-[10px]"></i></a>
+      </div>
+      <div style="max-height:200px;overflow-y:auto" class="divide-y divide-white/[0.04]">
+        <%if(recentLogins&&recentLogins.length>0){recentLogins.forEach(function(log){%>
+        <div class="flex items-center justify-between px-5 py-2.5">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full <%=log.status==='success'?'bg-emerald-400':'bg-red-400'%> flex-shrink-0"></span>
+            <div><div class="text-xs font-mono text-gray-300"><%=log.username%></div><div class="text-[10px] text-gray-600"><%=log.ip_address%></div></div>
+          </div>
+          <div class="text-[10px] text-gray-600 font-mono text-right"><%if(log.created_at){const d=new Date(log.created_at);%><%=d.toLocaleDateString()%><br><%=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})%><%}%></div>
+        </div>
+        <%})}else{%><div class="px-5 py-8 text-center text-xs text-gray-600">No login events yet</div><%}%>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Management -->
+  <div class="glass rounded-2xl overflow-hidden mb-8">
+    <div class="p-5 border-b border-white/5"><h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-users-gear text-amber-400"></i> Admin Management</h3><p class="text-xs text-gray-500 mt-0.5">Create or remove admin users</p></div>
+    <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-b border-white/5">
+      <%if(admins&&admins.length>0){admins.forEach(function(admin){%>
+      <div class="flex items-center justify-between bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-3">
+        <div><div class="text-sm font-semibold text-gray-200 font-mono"><%=admin.username%></div><div class="text-[10px] text-amber-400 mt-0.5 uppercase tracking-wider"><%=admin.role||'admin'%></div><div class="text-[10px] text-gray-700 mt-0.5"><%=admin.created_at?new Date(admin.created_at).toLocaleDateString():''%></div></div>
+        <button onclick="removeAdmin(<%=admin.id%>)" class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+      </div>
+      <%})}else{%><p class="text-xs text-gray-600 py-4">No sub-admins yet.</p><%}%>
+    </div>
+    <div class="p-5">
+      <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Add New Admin</h4>
+      <form onsubmit="createAdmin(event)" class="flex flex-col sm:flex-row gap-3">
+        <input type="text" name="username" required placeholder="Username" class="flex-1 bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition">
+        <input type="password" name="password" required placeholder="Password" class="flex-1 bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition">
+        <select name="role" class="bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none">
+          <option value="admin">Admin</option><option value="head_admin">Head Admin</option>
+        </select>
+        <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl text-sm transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Add</button>
+      </form>
+      <div id="adminStatus" class="mt-3 text-xs font-mono"></div>
+    </div>
+  </div>
+
+  <!-- All Keys Table -->
+  <div class="glass rounded-2xl overflow-hidden">
+    <div class="p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-white">All API Keys</h3><span class="text-xs font-mono bg-gray-800 border border-gray-700 text-gray-400 px-2 py-0.5 rounded-full"><%=keys.length%></span></div>
+      <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i><input type="text" id="keySearch" onkeyup="filterKeys()" placeholder="Search..." class="bg-[#0d1420] border border-gray-800 rounded-xl pl-8 pr-4 py-2 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-cyan-500/40 transition w-full sm:w-52"></div>
+    </div>
+    <div class="overflow-x-auto cs">
+      <table class="w-full text-left text-xs" id="keysTable">
+        <thead class="text-[10px] font-mono uppercase tracking-wider text-gray-600 border-b border-white/5 bg-gray-900/30">
+          <tr><th class="py-3 px-4">Label</th><th class="py-3 px-4">Key</th><th class="py-3 px-4">Endpoint</th><th class="py-3 px-4">Hits</th><th class="py-3 px-4">Expires</th><th class="py-3 px-4">Status</th><th class="py-3 px-4 text-right">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-white/[0.03]">
+          <%if(keys&&keys.length>0){keys.forEach(function(key){
+            let allowed='All';try{let p=JSON.parse(key.allowed_apis);if(Array.isArray(p)&&!p.includes('all'))allowed=p.join(', ');}catch(e){}
+            const exp=key.expires_at?new Date(key.expires_at):null;const isExpired=exp&&exp<new Date();
+          %>
+          <tr class="hover:bg-white/[0.015] transition">
+            <td class="py-3 px-4"><div class="font-semibold text-gray-200"><%=key.name||'Unnamed'%></div><%if(key.note_enabled&&key.key_note){%><span class="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 inline-block mt-0.5"><%=key.key_note%></span><%}%></td>
+            <td class="py-3 px-4 font-mono"><div class="flex items-center gap-1.5"><span class="text-cyan-400 bg-cyan-950/50 border border-cyan-800/30 px-2 py-0.5 rounded text-[11px]"><%=key.key%></span><button onclick="copyKey('<%=key.key%>')" class="text-gray-600 hover:text-gray-300 transition"><i class="fa-regular fa-copy text-[11px]"></i></button></div></td>
+            <td class="py-3 px-4 font-mono text-gray-500 text-[11px]"><%=allowed%></td>
+            <td class="py-3 px-4 font-mono"><span class="text-white font-bold"><%=key.hits%></span><%if(key.unlimited_hits){%><span class="text-emerald-400 text-[10px] ml-1"><i class="fa-solid fa-infinity"></i></span><%}%></td>
+            <td class="py-3 px-4 font-mono text-[11px]"><%if(!exp){%><span class="text-gray-600">Never</span><%}else{%><span class="<%=isExpired?'text-red-400 line-through':'text-gray-400'%>"><%=exp.toLocaleDateString()%></span><%}%></td>
+            <td class="py-3 px-4">
+              <%if(key.api_enabled===0){%><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">Disabled</span>
+              <%}else if(key.status==='active'){%><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+              <%}else{%><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20"><%=key.status%></span><%}%>
+            </td>
+            <td class="py-3 px-4"><div class="flex items-center justify-end gap-1.5">
+              <form action="/admin/toggle-status" method="POST" class="inline"><input type="hidden" name="id" value="<%=key.id%>"><input type="hidden" name="status" value="<%=key.status%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-amber-500/20 text-gray-500 hover:text-amber-400 transition" title="Toggle"><i class="fa-solid fa-power-off text-xs"></i></button></form>
+              <form action="/admin/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key?')"><input type="hidden" name="id" value="<%=key.id%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button></form>
+            </div></td>
+          </tr>
+          <%})}else{%><tr><td colspan="7" class="py-12 text-center text-gray-600">No API keys yet</td></tr><%}%>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- GENERATE MODAL -->
+<div id="generateModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+  <div class="glass w-full max-w-lg rounded-2xl border border-white/8 shadow-2xl my-8">
+    <div class="p-5 border-b border-white/5 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-key text-amber-400"></i> Generate API Key</h3>
+      <button onclick="closeModal('generateModal')" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+    </div>
+    <form action="/admin/generate-key" method="POST" class="p-6 space-y-4">
+      <div><label class="block text-xs font-semibold text-gray-400 mb-1">Label</label><input type="text" name="name" required placeholder="Client name..." class="w-full bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition"></div>
+      <div class="p-3 bg-gray-900/50 border border-gray-800 rounded-xl space-y-2">
+        <div class="flex items-center justify-between"><label class="text-xs font-semibold text-gray-400">Custom Key</label><input type="checkbox" id="enable_custom" name="enable_custom" onchange="document.getElementById('custom_key_input').disabled=!this.checked"></div>
+        <input type="text" id="custom_key_input" name="custom_key" disabled placeholder="e.g. SAHIL_VIP_99" class="w-full bg-[#070b11] border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-400 outline-none disabled:opacity-30 transition">
+      </div>
+      <div><label class="block text-xs font-semibold text-gray-400 mb-1">Allowed Endpoint</label>
+        <select name="selected_api" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 outline-none">
+          <option value="all">⚡ All Endpoints</option><%apis.forEach(function(api){%><option value="<%=api.name%>"><%=api.display_name%></option><%});%>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-400 mb-1">Validity</label><select name="expiry" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none"><option value="never">Lifetime</option><option value="3d">3 Days</option><option value="7d">7 Days</option><option value="30d">30 Days</option></select></div>
+        <div><label class="block text-xs font-semibold text-gray-400 mb-1">Unlimited</label><select name="unlimited_hits" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none"><option value="false">No</option><option value="true">Yes</option></select></div>
+      </div>
+      <div class="p-3 bg-gray-900/50 border border-gray-800 rounded-xl space-y-3">
+        <div class="flex items-center justify-between"><label class="text-xs font-semibold text-gray-400">Rate Limits</label><input type="checkbox" name="rate_limit_enabled" checked></div>
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <div><span class="text-[10px] text-gray-600">Daily</span><input type="number" name="rate_limit_per_day" value="100" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none"></div>
+          <div><span class="text-[10px] text-gray-600">Hourly</span><input type="number" name="rate_limit_per_hour" value="20" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none"></div>
+          <div><span class="text-[10px] text-gray-600">Per Min</span><input type="number" name="rate_limit_per_minute" value="5" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none"></div>
+        </div>
+      </div>
+      <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl text-sm transition">Generate Key</button>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden bg-gray-900 border border-gray-700 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+  <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Copied!</span>
+</div>
+
+<script>
+const dailyVolumeData=<%- JSON.stringify(dailyVolume||[]) %>;
+const topEndpointsData=<%- JSON.stringify(topEndpoints||[]) %>;
+
+new Chart(document.getElementById('dailyChart'),{type:'line',data:{labels:dailyVolumeData.map(d=>d.date),datasets:[{label:'Requests',data:dailyVolumeData.map(d=>d.total),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.07)',tension:0.4,fill:true,pointRadius:4,pointBackgroundColor:'#f59e0b',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+new Chart(document.getElementById('endpointsChart'),{type:'bar',data:{labels:topEndpointsData.map(d=>d.endpoint),datasets:[{label:'Hits',data:topEndpointsData.map(d=>d.hits),backgroundColor:['#f59e0b','#06b6d4','#6366f1','#10b981','#ef4444'],borderRadius:6,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+function openModal(id){document.getElementById(id).classList.remove('hidden');}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function copyKey(text){navigator.clipboard.writeText(text).then(()=>{document.getElementById('toastMsg').textContent='Key copied!';const t=document.getElementById('toast');t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2000);});}
+function filterKeys(){const val=document.getElementById('keySearch').value.toUpperCase();document.getElementById('keysTable').querySelectorAll('tbody tr').forEach(tr=>{tr.style.display=tr.textContent.toUpperCase().includes(val)?'':'none';});}
+
+async function saveMasterSettings(){
+  const message=document.getElementById('maintenanceMessage').value;
+  const el=document.getElementById('settingsSaveStatus');el.textContent='Saving...';el.style.color='#6b7280';
+  try{const res=await fetch('/admin/update-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maintenance_message:message})});const data=await res.json();if(data.success){el.textContent='✓ Saved';el.style.color='#10b981';}else{el.textContent='✗ Failed';el.style.color='#ef4444';}}catch(e){el.textContent='✗ Error';el.style.color='#ef4444';}
+  setTimeout(()=>{el.textContent='';},3000);
+}
+
+async function createAdmin(e){
+  e.preventDefault();
+  const data=Object.fromEntries(new FormData(e.target).entries());
+  const el=document.getElementById('adminStatus');el.textContent='Creating...';el.style.color='#6b7280';
+  try{const res=await fetch('/head-admin/create-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await res.json();if(result.success){el.textContent='✓ Admin created!';el.style.color='#10b981';setTimeout(()=>location.reload(),1000);}else{el.textContent='✗ '+(result.error||'Failed');el.style.color='#ef4444';}}catch(e){el.textContent='✗ Error';el.style.color='#ef4444';}
+}
+
+async function removeAdmin(id){
+  if(!confirm('Remove this admin?'))return;
+  const res=await fetch('/head-admin/remove-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:id})});
+  const result=await res.json();
+  if(result.success)location.reload();else alert('Failed: '+(result.error||'Unknown'));
+}
+</script>
 </body>
 </html>
