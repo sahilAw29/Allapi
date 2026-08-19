@@ -13,17 +13,14 @@ const { WebSocketServer } = require('ws');
 
 const app = express();
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTNXERA';
 const NEW_BASE = 'https://sahilcc.dpdns.org';
-const BACKUP_BASE = 'https://sahilcc.ddns.net';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
 };
 
-// ─── DATABASE SETUP ───────────────────────────────────────────────────────────
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
@@ -33,7 +30,6 @@ const dbGet = (sql, p = []) => new Promise((ok, fail) => db.get(sql, p, (e, r) =
 const dbAll = (sql, p = []) => new Promise((ok, fail) => db.all(sql, p, (e, r) => e ? fail(e) : ok(r)));
 const dbRun = (sql, p = []) => new Promise((ok, fail) => db.run(sql, p, function(e) { e ? fail(e) : ok(this); }));
 
-// ─── DB INIT ──────────────────────────────────────────────────────────────────
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,14 +119,14 @@ db.serialize(() => {
         maintenance_message TEXT DEFAULT 'API is currently under maintenance.'
     )`);
 
-    // Safe migrations
+    // safe migrations
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
+    db.run(`ALTER TABLE available_apis ADD COLUMN expires_at DATETIME`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN api_overrides TEXT DEFAULT '{}'`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
 
-    // Seed defaults
     db.get(`SELECT id FROM settings WHERE id = 1`, [], (e, r) => {
         if (!r) db.run(`INSERT INTO settings (id, maintenance_message) VALUES (1, 'API is currently under maintenance.')`);
     });
@@ -146,30 +142,25 @@ db.serialize(() => {
     db.get(`SELECT COUNT(*) as c FROM available_apis`, [], (e, r) => {
         if (r && r.c === 0) {
             const APIs = [
-                // ── Phone / Number ────────────────────────────────────────────
                 ['tg',           '📞 TG to Number',       '/api/tg',           '{"number":""}',  '{"number":"9876543210"}',   'Telegram number lookup'],
                 ['num',          '📱 Number Info',         '/api/num',          '{"number":""}',  '{"number":"9876543210"}',   'Complete number information'],
                 ['num2',         '🔍 Number Info v2',      '/api/num2',         '{"number":""}',  '{"number":"9876543210"}',   'Advanced number information'],
                 ['num-india',    '🇮🇳 Indian Number',       '/api/num-india',    '{"number":""}',  '{"number":"9876543210"}',   'Indian mobile number details'],
                 ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',  '{"number":"03001234567"}',  'Pakistani mobile number'],
-                ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chain phone number lookup'],
+                ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chained number info'],
                 ['bom',          '💥 BOM Lookup',          '/api/bom',          '{"number":""}',  '{"number":"9876543210"}',   'BOM number lookup'],
-                // ── Identity ──────────────────────────────────────────────────
                 ['aadhr',        '🪪 Aadhaar Info',        '/api/aadhr',        '{"q":""}',       '{"q":"123456789012"}',      'Aadhaar information lookup'],
                 ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'PAN card details'],
                 ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
                 ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
-                // ── Vehicle ───────────────────────────────────────────────────
                 ['veh-to-num',   '🚗 Vehicle to Number',   '/api/veh-to-num',   '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
                 ['vehicle-info', '🚘 Vehicle Info',         '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
                 ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
-                // ── Social / Gaming ───────────────────────────────────────────
                 ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
                 ['snap',         '👻 Snapchat Info',       '/api/snap',         '{"username":""}','{"username":"john_doe"}',   'Snapchat profile lookup'],
                 ['git',          '🐙 GitHub User',         '/api/git',          '{"username":""}','{"username":"octocat"}',    'GitHub profile info'],
                 ['bgmi',         '🎮 BGMI Player',         '/api/bgmi',         '{"uid":""}',     '{"uid":"5121439477"}',      'BGMI player stats'],
                 ['ff',           '🔫 FreeFire ID',         '/api/ff',           '{"uid":""}',     '{"uid":"123456789"}',       'FreeFire player info'],
-                // ── Tech / Other ──────────────────────────────────────────────
                 ['ip',           '🌐 IP Geolocation',      '/api/ip',           '{"ip":""}',      '{"ip":"8.8.8.8"}',          'IP address location'],
                 ['bank',         '🏦 Bank IFSC',           '/api/bank',         '{"ifsc":""}',    '{"ifsc":"SBIN0001234"}',    'Bank branch details'],
                 ['pincode',      '📍 Pincode Info',        '/api/pincode',      '{"pin":""}',     '{"pin":"110001"}',          'Area details from pincode'],
@@ -187,7 +178,6 @@ db.serialize(() => {
     });
 });
 
-// ─── EXPRESS SETUP ────────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
@@ -208,7 +198,6 @@ const globalLimiter = rateLimit({
     handler: (req, res) => res.json({ error: 'Global rate limit exceeded', contact: OWNER })
 });
 
-// ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 const requireAuth = (req, res, next) => {
     if (!req.session.user) return res.redirect('/login');
     next();
@@ -219,7 +208,6 @@ const requireHeadAdmin = (req, res, next) => {
     next();
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getParam = (p, ...keys) => {
     for (const k of keys)
         if (p[k] !== undefined && p[k] !== null && p[k] !== '') return encodeURIComponent(p[k]);
@@ -237,283 +225,54 @@ const formatApis = (apis) => apis.map(api => {
     return { ...api, param_name: Object.keys(params)[0] || 'param' };
 });
 
-// ─── PROXY HELPER WITH FALLBACK ─────────────────────────────────────────────
-async function proxyRequest(url, timeout = 30000) {
-    try {
-        const response = await axios.get(url, { 
-            timeout: timeout,
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        return { data: response.data, status: response.status };
-    } catch (err) {
-        if (err.response) {
-            return { data: err.response.data, status: err.response.status };
-        }
-        throw err;
-    }
-}
-
-async function proxyWithFallback(urls, timeout = 30000) {
-    let lastError = null;
-    for (const url of urls) {
-        try {
-            const result = await proxyRequest(url, timeout);
-            if (result.status >= 200 && result.status < 300) {
-                return result;
-            }
-            lastError = result;
-        } catch (err) {
-            lastError = err;
-        }
-    }
-    throw lastError || new Error('All proxy attempts failed');
-}
-
-// ─── API PROXY MAP ────────────────────────────────────────────────────────────
 const apiProxyMap = {
-    // ── Phone / Number ────────────────────────────────────────────────────────
-    'tg': (p) => {
-        const number = getParam(p, 'number', 'term', 'id', 'username', 'num', 'query', 'q');
-        return [
-            `${NEW_BASE}/api/tg?number=${number}`,
-            `${BACKUP_BASE}/api/tg?number=${number}`
-        ];
-    },
-    'num': (p) => {
-        const number = getParam(p, 'q', 'number', 'num', 'query', 'term');
-        return [
-            `${NEW_BASE}/api/num?number=${number}`,
-            `${BACKUP_BASE}/api/num?number=${number}`
-        ];
-    },
-    'num2': (p) => {
-        const number = getParam(p, 'q', 'number', 'num', 'query', 'term');
-        return [
-            `${NEW_BASE}/api/num2?number=${number}`,
-            `${BACKUP_BASE}/api/num2?number=${number}`
-        ];
-    },
-    'num-india': (p) => {
-        const number = getParam(p, 'num', 'number', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/num-india?number=${number}`,
-            `${BACKUP_BASE}/api/num-india?number=${number}`
-        ];
-    },
-    'num-pak': (p) => {
-        const number = getParam(p, 'number', 'num', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/num-pak?number=${number}`,
-            `${BACKUP_BASE}/api/num-pak?number=${number}`
-        ];
-    },
-    
-    // ─── CHAIN API - SEPARATE FROM LEAK ──────────────────────────────────────
-    'chain': (p) => {
-        const number = getParam(p, 'number', 'query', 'q', 'num', 'term');
-        return [
-            `${NEW_BASE}/api/chain?number=${number}`,
-            `${NEW_BASE}/api/chain?q=${number}`,
-            `${BACKUP_BASE}/api/chain?number=${number}`,
-            `${NEW_BASE}/api/leakchain?number=${number}` // fallback
-        ];
-    },
-    
-    'bom': (p) => {
-        const number = getParam(p, 'number', 'num', 'q', 'query', 'term');
-        return [
-            `${NEW_BASE}/api/bom?number=${number}`,
-            `${BACKUP_BASE}/api/bom?number=${number}`
-        ];
-    },
-
-    // ── Identity ──────────────────────────────────────────────────────────────
-    'aadhr': (p) => {
-        const q = getParam(p, 'q', 'adhar', 'term', 'id', 'query', 'number');
-        return [
-            `${NEW_BASE}/api/adhar?adhar=${q}`,
-            `${NEW_BASE}/api/aadhr?q=${q}`,
-            `${BACKUP_BASE}/api/adhar?adhar=${q}`
-        ];
-    },
-    'pan': (p) => {
-        const pan = getParam(p, 'pan', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/pan?pan=${pan}`,
-            `${NEW_BASE}/api/pan?q=${pan}`,
-            `${BACKUP_BASE}/api/pan?pan=${pan}`
-        ];
-    },
-    'family': (p) => {
-        const term = getParam(p, 'term', 'adhar', 'q', 'query', 'number');
-        return [
-            `${NEW_BASE}/api/family?adhar=${term}`,
-            `${BACKUP_BASE}/api/family?adhar=${term}`
-        ];
-    },
-    'email-info': (p) => {
-        const email = getParam(p, 'q', 'email', 'query');
-        return [
-            `${NEW_BASE}/api/email?email=${email}`,
-            `${NEW_BASE}/api/email-info?q=${email}`,
-            `${BACKUP_BASE}/api/email?email=${email}`
-        ];
-    },
-
-    // ── Vehicle ───────────────────────────────────────────────────────────────
-    'veh-to-num': (p) => {
-        const vehicle = getParam(p, 'vehicle', 'term', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/veh-info?registration_number=${vehicle}`,
-            `${BACKUP_BASE}/api/veh-info?registration_number=${vehicle}`
-        ];
-    },
-    'vehicle-info': (p) => {
-        const vehicle = getParam(p, 'vehicle', 'registration_number', 'q', 'term', 'query');
-        return [
-            `${NEW_BASE}/api/veh?vehicle=${vehicle}`,
-            `${NEW_BASE}/api/vehicle-info?vehicle=${vehicle}`,
-            `${BACKUP_BASE}/api/veh?vehicle=${vehicle}`
-        ];
-    },
-    'rc': (p) => {
-        const owner = getParam(p, 'owner', 'vehicle', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/rc?registration_number=${owner}`,
-            `${BACKUP_BASE}/api/rc?registration_number=${owner}`
-        ];
-    },
-
-    // ── Social / Gaming ───────────────────────────────────────────────────────
-    'insta': (p) => {
-        const username = getParam(p, 'username', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/insta?username=${username}`,
-            `${NEW_BASE}/api/instagram?username=${username}`,
-            `${BACKUP_BASE}/api/insta?username=${username}`
-        ];
-    },
-    'snap': (p) => {
-        const username = getParam(p, 'username', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/snap?username=${username}`,
-            `${NEW_BASE}/api/snapchat?username=${username}`,
-            `${BACKUP_BASE}/api/snap?username=${username}`
-        ];
-    },
-    'git': (p) => {
-        const username = getParam(p, 'username', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/git?username=${username}`,
-            `${NEW_BASE}/api/github?username=${username}`,
-            `${BACKUP_BASE}/api/git?username=${username}`
-        ];
-    },
-    'bgmi': (p) => {
-        const uid = getParam(p, 'uid', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/bgmi?uid=${uid}`,
-            `${NEW_BASE}/api/bgmi?userid=${uid}`,
-            `${BACKUP_BASE}/api/bgmi?uid=${uid}`
-        ];
-    },
-    'ff': (p) => {
-        const uid = getParam(p, 'uid', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/ff?uid=${uid}`,
-            `${NEW_BASE}/api/freefire?uid=${uid}`,
-            `${BACKUP_BASE}/api/ff?uid=${uid}`
-        ];
-    },
-
-    // ── Tech / Other ──────────────────────────────────────────────────────────
-    'ip': (p) => {
-        const ip = getParam(p, 'ip', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/ip?ip=${ip}`,
-            `${NEW_BASE}/api/ipgeo?ip=${ip}`,
-            `${BACKUP_BASE}/api/ip?ip=${ip}`
-        ];
-    },
-    'bank': (p) => {
-        const ifsc = getParam(p, 'ifsc', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/ifsc?ifsc=${ifsc}`,
-            `${NEW_BASE}/api/bank?ifsc=${ifsc}`,
-            `${BACKUP_BASE}/api/ifsc?ifsc=${ifsc}`
-        ];
-    },
-    'pincode': (p) => {
-        const pin = getParam(p, 'pin', 'pincode', 'q', 'query');
-        return [
-            `${NEW_BASE}/api/pin?pincode=${pin}`,
-            `${NEW_BASE}/api/pincode?pin=${pin}`,
-            `${BACKUP_BASE}/api/pin?pincode=${pin}`
-        ];
-    },
-    
-    // ─── LEAK APIs - Fixed with multiple fallback paths ───────────────────────
-    'leak': (p) => {
-        const number = getParam(p, 'number', 'query', 'q', 'num', 'term');
-        return [
-            `${NEW_BASE}/api/leak?number=${number}`,
-            `${NEW_BASE}/api/leak?q=${number}`,
-            `${NEW_BASE}/api/leak?query=${number}`,
-            `${NEW_BASE}/leak?number=${number}`,
-            `${BACKUP_BASE}/api/leak?number=${number}`,
-            `${BACKUP_BASE}/leak?number=${number}`
-        ];
-    },
-    'leakpro': (p) => {
-        const number = getParam(p, 'number', 'query', 'q', 'num', 'quiry', 'term');
-        return [
-            `${NEW_BASE}/api/leakpro?query=${number}`,
-            `${NEW_BASE}/api/leakpro?number=${number}`,
-            `${NEW_BASE}/api/leakpro?q=${number}`,
-            `${NEW_BASE}/leakpro?query=${number}`,
-            `${BACKUP_BASE}/api/leakpro?query=${number}`,
-            `${BACKUP_BASE}/leakpro?query=${number}`
-        ];
-    },
-    
-    'ai-image': (p) => {
-        const prompt = getParam(p, 'prompt', 'q', 'query');
-        return [`https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${prompt}`];
-    },
-
-    // ─── Mistral — handles its own response ────────────────────────────────────
+    'tg':           p => `${NEW_BASE}/api/tg?number=${getParam(p,'number','term','id','username','num','query','q')}`,
+    'num':          p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num2':         p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-india':    p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
+    'num-pak':      p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
+    'chain':        p => `${NEW_BASE}/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
+    'bom':          p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
+    'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
+    'number-info':  p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-newinfo':  p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'aadhr':        p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'q','adhar','term','id','query','number')}`,
+    'pan':          p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
+    'family':       p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
+    'email-info':   p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
+    'veh-to-num':   p => `${NEW_BASE}/api/veh-info?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
+    'vehicle':      p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
+    'rc':           p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
+    'insta':        p => `${NEW_BASE}/api/insta?username=${getParam(p,'username','q','query')}`,
+    'snap':         p => `${NEW_BASE}/api/snap?username=${getParam(p,'username','q','query')}`,
+    'git':          p => `${NEW_BASE}/api/git?username=${getParam(p,'username','q','query')}`,
+    'bgmi':         p => `${NEW_BASE}/api/bgmi?uid=${getParam(p,'uid','q','query')}`,
+    'ff':           p => `${NEW_BASE}/api/ff?uid=${getParam(p,'uid','q','query')}`,
+    'ip':           p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
+    'bank':         p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
+    'pincode':      p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
+    'leak':         p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
+    'leakpro':      p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
+    'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
     'mistral': async (p, res, keyData, rateLimitInfo) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
-        
-        try {
-            const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
-                model: 'mistral-small-latest',
-                messages: [{ role: 'user', content: message }],
-                max_tokens: 1024
-            }, {
-                headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
-                timeout: 30000
-            });
-            const out = { 
-                success: true, 
-                reply: r.data.choices?.[0]?.message?.content || '', 
-                owner: OWNER, 
-                channel: CHANNEL 
-            };
-            if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
-            if ((keyData.note_enabled == 1) && keyData.key_note) out.key_note = keyData.key_note;
-            return res.json(out);
-        } catch (err) {
-            console.error('Mistral error:', err);
-            return res.status(500).json({ error: 'Mistral request failed', details: err.message });
-        }
+        const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+            model: 'mistral-small-latest',
+            messages: [{ role: 'user', content: message }],
+            max_tokens: 1024
+        }, {
+            headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
+            timeout: 30000
+        });
+        const out = { success: true, reply: r.data.choices?.[0]?.message?.content || '', owner: OWNER, channel: CHANNEL };
+        if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
+        if ((keyData.note_enabled == 1) && keyData.key_note) out.key_note = keyData.key_note;
+        return res.json(out);
     }
 };
 
-// ─── RESPONSE CLEANER ─────────────────────────────────────────────────────────
 const REMOVE_FIELDS = new Set([
     'owner','OWNER','channel','CHANNEL','telegram','contact','instagram','twitter',
     'fb','facebook','website','github','created_by','createdBy','owner_username',
@@ -542,7 +301,6 @@ function cleanResponse(data) {
     return obj;
 }
 
-// ─── PUBLIC ROUTES ────────────────────────────────────────────────────────────
 app.get('/', async (req, res) => {
     try {
         const [keys, apis] = await Promise.all([
@@ -606,7 +364,6 @@ app.get('/docs', async (req, res) => {
     }
 });
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
 app.get('/login', (req, res) => res.render('login', { error: req.query.error || null }));
 
 app.post('/login', async (req, res) => {
@@ -643,7 +400,6 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-// ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 app.get('/admin/dashboard', requireAuth, async (req, res) => {
     try {
         const [keys, apis, settings, chartRows, dailyVolume, topEndpoints, recentActivity, reqStats] = await Promise.all([
@@ -699,7 +455,6 @@ app.get('/admin/dashboard', requireAuth, async (req, res) => {
     }
 });
 
-// ─── HEAD ADMIN DASHBOARD ─────────────────────────────────────────────────────
 app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     try {
         const [keys, users, apis, settings, chartRows] = await Promise.all([
@@ -727,7 +482,6 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS PAGE ───────────────────────────────────────────────────────────
 app.get('/admin/analytics', requireAuth, async (req, res) => {
     try {
         const epCount = await dbGet('SELECT COUNT(*) as c FROM available_apis');
@@ -743,7 +497,6 @@ app.get('/admin/analytics', requireAuth, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS DATA ───────────────────────────────────────────────────────────
 app.get('/analytics/data', requireAuth, async (req, res) => {
     try {
         const [
@@ -831,7 +584,6 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
     }
 });
 
-// ─── HEATMAP DATA ─────────────────────────────────────────────────────────────
 app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     try {
         const rows = await dbAll(
@@ -847,7 +599,6 @@ app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     }
 });
 
-// ─── LOGIN HISTORY ────────────────────────────────────────────────────────────
 app.get('/admin/login-history', requireAuth, async (req, res) => {
     try {
         const [logs, topFailedIPs] = await Promise.all([
@@ -870,13 +621,13 @@ app.get('/admin/login-history', requireAuth, async (req, res) => {
     }
 });
 
-// ─── KEY MANAGEMENT ───────────────────────────────────────────────────────────
+// ─── KEY MANAGEMENT — usage_mode driven: unlimited | ratelimited | onetime ────
 app.post('/admin/generate-key', requireAuth, async (req, res) => {
     const {
-        name, expiry, unlimited_hits, selected_apis, custom_key,
+        name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
+        selected_apis, custom_key,
         rate_limit_per_day, rate_limit_per_minute, key_note,
-        custom_expiry_date, custom_expiry_time,
-        max_hits: raw_max_hits, one_time
+        custom_expiry_date, custom_expiry_time
     } = req.body;
     const isCustomEnabled = req.body.enable_custom === 'on';
 
@@ -901,12 +652,23 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
             allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
     }
 
-    const isUnlimited = ['true','on','1'].includes(String(unlimited_hits));
-    const isOneTime   = ['true','on','1'].includes(String(one_time));
-    const maxHits     = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
-    const noteText    = (key_note || '').trim();
-    const perDay      = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    || 100);
-    const perMin      = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) || 0);
+    // ── Usage mode: three clean choices, no overlap ──
+    const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode) ? usage_mode : 'ratelimited';
+    let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+    if (mode === 'unlimited') {
+        isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+    } else if (mode === 'onetime') {
+        // fixed total-request cap, admin-settable (e.g. 5000), no recurring daily/minute limits
+        isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+        maxHits = Math.max(1, parseInt(one_time_limit) || 1);
+    } else {
+        isUnlimited = false; rateLimitEnabled = true;
+        perDay  = Math.max(0, parseInt(rate_limit_per_day)    || 100);
+        perMin  = Math.max(0, parseInt(rate_limit_per_minute) || 0);
+        maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+    }
+
+    const noteText = (key_note || '').trim();
 
     const insert = async (apiKey, isCustom) => {
         await dbRun(
@@ -919,7 +681,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
              expires_at ? expires_at.toISOString() : null,
              isUnlimited ? 1 : 0, allowedApisJson,
              isCustom ? 1 : 0,
-             isUnlimited ? 0 : 1, perDay, perMin,
+             rateLimitEnabled ? 1 : 0, perDay, perMin,
              noteText, noteText.length > 0 ? 1 : 0,
              new Date().toISOString(), maxHits]
         );
@@ -943,10 +705,9 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── EDIT KEY ─────────────────────────────────────────────────────────────────
 app.post('/admin/edit-key', requireAuth, async (req, res) => {
     const {
-        key_id, name, expiry, unlimited_hits, one_time, max_hits: raw_max_hits,
+        key_id, name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
         rate_limit_per_day, rate_limit_per_minute,
         key_note, status, selected_apis, api_enabled, api_overrides
     } = req.body;
@@ -978,13 +739,26 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                 allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
         }
 
-        const isUnlimited = ['true','on','1',1].includes(unlimited_hits);
-        const isOneTime   = ['true','on','1',1].includes(one_time);
-        const maxHits      = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
-        const enabled      = !['false','0',0].includes(api_enabled) ? 1 : 0;
-        const noteText     = (key_note || '').trim();
-        const perDay       = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100);
-        const perMin       = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0);
+        // ── Usage mode: derive from posted value, fall back to existing row's real state ──
+        const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode)
+            ? usage_mode
+            : (existing.unlimited_hits ? 'unlimited' : (existing.rate_limit_enabled ? 'ratelimited' : 'onetime'));
+
+        let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+        if (mode === 'unlimited') {
+            isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+        } else if (mode === 'onetime') {
+            isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+            maxHits = Math.max(1, parseInt(one_time_limit) || parseInt(raw_max_hits) || 1);
+        } else {
+            isUnlimited = false; rateLimitEnabled = true;
+            perDay  = parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100;
+            perMin  = parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0;
+            maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+        }
+
+        const enabled  = !['false','0',0].includes(api_enabled) ? 1 : 0;
+        const noteText = (key_note || '').trim();
 
         let overridesJson = existing.api_overrides || '{}';
         if (api_overrides !== undefined) {
@@ -994,6 +768,7 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
             } catch(_) { overridesJson = '{}'; }
         }
 
+        // ── auto-reactivate if the key was only expired because of the old hit cap ──
         let newStatus = status || existing.status;
         if (!status && existing.status === 'expired') {
             const stillOverCap = !isUnlimited && maxHits > 0 && existing.hits >= maxHits;
@@ -1019,7 +794,7 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                last_updated = ?
              WHERE id = ?`,
             [name || null, allowedApisJson, noteText, noteText.length > 0 ? 1 : 0,
-             isUnlimited ? 1 : 0, isUnlimited ? 0 : 1, perDay, perMin, maxHits,
+             isUnlimited ? 1 : 0, rateLimitEnabled ? 1 : 0, perDay, perMin, maxHits,
              newStatus, enabled, overridesJson, expiryIso,
              new Date().toISOString(), key_id]
         );
@@ -1073,7 +848,6 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
     }
 });
 
-// ─── DUPLICATE KEY ────────────────────────────────────────────────────────────
 app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
     const { key_id } = req.body;
     if (!key_id) return res.status(400).json({ success: false, error: 'key_id required' });
@@ -1102,7 +876,7 @@ app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── API MANAGEMENT ───────────────────────────────────────────────────────────
+// ─── GLOBAL API MANAGEMENT ─────────────────────────────────────────────────
 app.post('/admin/toggle-api', requireAuth, async (req, res) => {
     const { api_id, is_active } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
@@ -1120,6 +894,23 @@ app.post('/admin/update-api-status', requireAuth, async (req, res) => {
             [is_active ? 1 : 0, custom_message || 'API is currently turned off.', api_id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── SET / CLEAR an API's auto-expiry — once it passes, the API turns off by itself ──
+app.post('/admin/update-api-expiry', requireAuth, async (req, res) => {
+    const { api_id, expires_at } = req.body;
+    if (!api_id) return res.status(400).json({ error: 'API ID required' });
+    try {
+        const iso = expires_at ? new Date(expires_at).toISOString() : null;
+        await dbRun('UPDATE available_apis SET expires_at = ? WHERE id = ?', [iso, api_id]);
+        // if they set a time already in the past, flip it off immediately for instant feedback
+        if (iso && new Date(iso) < new Date()) {
+            await dbRun('UPDATE available_apis SET is_active = 0 WHERE id = ?', [api_id]);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/admin/update-api-name', requireAuth, async (req, res) => {
@@ -1140,7 +931,6 @@ app.post('/admin/update-settings', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).send('Database error: ' + err.message); }
 });
 
-// ─── HEAD ADMIN: USER MANAGEMENT ─────────────────────────────────────────────
 app.post('/head-admin/create-user', requireHeadAdmin, async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role)
@@ -1177,15 +967,24 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (!userKey)
             return res.status(401).json({ error: 'API key required', contact: OWNER });
 
-        // Check global API enabled status
+        // Global API status — including auto-expiry check (lazy self-heal if the sweep hasn't run yet)
         const targetApi = await dbGet(
             'SELECT * FROM available_apis WHERE name = ? OR endpoint = ?',
             [endpoint, `/api/${endpoint}`]
         );
-        if (targetApi && targetApi.is_active === 0)
-            return res.json({ status: false, message: targetApi.custom_message || 'This API is currently turned off.' });
+        if (targetApi) {
+            const apiExpired = targetApi.expires_at && new Date(targetApi.expires_at) < new Date();
+            if (targetApi.is_active === 0 || apiExpired) {
+                if (apiExpired && targetApi.is_active === 1) {
+                    dbRun('UPDATE available_apis SET is_active = 0 WHERE id = ?', [targetApi.id]).catch(() => {});
+                }
+                return res.json({
+                    status: false,
+                    message: targetApi.custom_message || (apiExpired ? 'This API has expired.' : 'This API is currently turned off.')
+                });
+            }
+        }
 
-        // Validate key
         const keyData = await dbGet('SELECT * FROM api_keys WHERE UPPER(key) = UPPER(?)', [userKey]);
         if (!keyData)
             return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
@@ -1194,14 +993,13 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (keyData.status !== 'active')
             return res.status(403).json({ error: `Key status is ${keyData.status}`, contact: OWNER });
 
-        // Check allowed APIs
         try {
             const allowed = JSON.parse(keyData.allowed_apis || '["all"]');
             if (!allowed.includes('all') && !allowed.includes(endpoint))
                 return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
         } catch(_) {}
 
-        // Check per-key API override
+        // Per-key API override — this specific key may have this specific API turned off
         try {
             const overrides = JSON.parse(keyData.api_overrides || '{}');
             if (overrides[endpoint] && overrides[endpoint].enabled === false) {
@@ -1209,13 +1007,11 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             }
         } catch(_) {}
 
-        // Check expiry (date-based)
         if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
             dbRun('UPDATE api_keys SET status = "expired" WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({ error: 'Key expired', contact: OWNER });
         }
 
-        // Check expiry (hit-count-based)
         if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
             dbRun('UPDATE api_keys SET status = "expired", api_enabled = 0 WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({
@@ -1227,7 +1023,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             });
         }
 
-        // ── Rate limiting ──────────────────────────────────────────────────────
         let rateLimitInfo = {};
         if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
             const perDay = parseInt(keyData.rate_limit_per_day)   || 100;
@@ -1274,12 +1069,10 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 rateLimitInfo.per_minute = { limit: perMin, used: minCount + 1, remaining: Math.max(0, perMin - minCount - 1) };
         }
 
-        // Track hits
         dbRun(`INSERT INTO daily_calls (api_key,date,calls) VALUES (?,?,1)
                ON CONFLICT(api_key,date) DO UPDATE SET calls = calls + 1`, [userKey, today]).catch(() => {});
         dbRun('UPDATE api_keys SET hits = hits + 1 WHERE id = ?', [keyData.id]).catch(() => {});
 
-        // WebSocket broadcast
         wsBroadcast({
             type     : 'hit',
             endpoint : endpoint,
@@ -1293,7 +1086,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
         const params = { ...req.query, ...req.body };
 
-        // Mistral — handles its own response
         if (endpoint === 'mistral') {
             try { await proxyFn(params, res, keyData, rateLimitInfo); }
             catch (err) {
@@ -1303,12 +1095,11 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             return;
         }
 
-        // Standard proxy with fallback
         try {
-            const urls        = proxyFn(params);
-            const upstream    = await proxyWithFallback(Array.isArray(urls) ? urls : [urls]);
-            const responseMs  = Date.now() - reqStart;
-            let data          = cleanResponse(upstream.data);
+            const targetUrl  = proxyFn(params);
+            const upstream   = await axios.get(targetUrl, { timeout: 30000 });
+            const responseMs = Date.now() - reqStart;
+            let data         = cleanResponse(upstream.data);
 
             if (Object.keys(rateLimitInfo).length) data.rate_limit = rateLimitInfo;
             if (keyData.note_enabled == 1 && keyData.key_note) data.key_note = keyData.key_note;
@@ -1323,7 +1114,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             dbRun(`INSERT INTO analytics (api_key,endpoint,status_code,ip_address,response_time,date)
                    VALUES (?,?,?,?,?,?)`,
                 [userKey, endpoint, 500, req.ip, Date.now() - reqStart, today]).catch(() => {});
-            res.status(500).json({ error: 'Upstream API failed', details: err.message || 'All proxy attempts failed' });
+            res.status(500).json({ error: 'Upstream API failed', details: err.message });
         }
 
     } catch (err) {
@@ -1332,21 +1123,29 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     }
 });
 
-// ─── HEALTH ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
-// ─── ERROR HANDLER ────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('Unhandled:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// ─── HTTP SERVER + WEBSOCKET ──────────────────────────────────────────────────
+// ─── AUTO-EXPIRE SWEEP — flips any API whose time has passed to off, every 60s ──
+async function autoExpireApis() {
+    try {
+        await dbRun(`UPDATE available_apis SET is_active = 0
+                     WHERE expires_at IS NOT NULL AND expires_at <= datetime('now') AND is_active = 1`);
+    } catch (err) {
+        console.error('Auto-expire APIs error:', err);
+    }
+}
+autoExpireApis();
+setInterval(autoExpireApis, 60 * 1000);
+
 const PORT   = process.env.PORT || 3000;
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server, path: '/ws/hits' });
 
-// broadcast to all connected WS clients
 function wsBroadcast(payload) {
     const msg = JSON.stringify(payload);
     wss.clients.forEach(client => {
@@ -1354,7 +1153,6 @@ function wsBroadcast(payload) {
     });
 }
 
-// keep-alive ping every 25s
 setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === 1) client.ping();
