@@ -15,7 +15,7 @@ const app = express();
 
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTNXERA';
-const NEW_BASE = 'https://sahilcc.dpdns.org';
+const NEW_BASE = 'https://www.heeriye.godstress.site';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
