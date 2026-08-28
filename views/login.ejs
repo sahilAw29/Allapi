@@ -140,12 +140,13 @@
         <div class="error-msg">
             <% if (error === 'invalid') { %>Invalid username or password
             <% } else if (error === 'missing') { %>Please enter both username and password
+            <% } else if (error === 'blocked') { %>Too many failed attempts. Try again in 15 minutes
             <% } else { %>Login failed. Please try again
             <% } %>
         </div>
         <% } %>
 
-        <form method="POST" action="/login">
+        <form method="POST" action="/nazriya">
             <div class="input-group">
                 <label>Username</label>
                 <input type="text" name="username" placeholder="Enter your username" required autofocus>
