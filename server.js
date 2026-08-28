@@ -30,6 +30,34 @@ const dbGet = (sql, p = []) => new Promise((ok, fail) => db.get(sql, p, (e, r) =
 const dbAll = (sql, p = []) => new Promise((ok, fail) => db.all(sql, p, (e, r) => e ? fail(e) : ok(r)));
 const dbRun = (sql, p = []) => new Promise((ok, fail) => db.run(sql, p, function(e) { e ? fail(e) : ok(this); }));
 
+// ─── BRUTE FORCE PROTECTION ───────────────────────────────────────────────────
+const loginAttempts = {};  // key: ip or username → { count, blockedUntil }
+const MAX_ATTEMPTS  = 5;
+const BLOCK_MINUTES = 15;
+
+function isBlocked(key) {
+    const entry = loginAttempts[key];
+    if (!entry) return false;
+    if (entry.blockedUntil && Date.now() < entry.blockedUntil) return true;
+    if (entry.blockedUntil && Date.now() >= entry.blockedUntil) {
+        delete loginAttempts[key]; // auto-unblock after 15 min
+    }
+    return false;
+}
+
+function recordFail(key) {
+    if (!loginAttempts[key]) loginAttempts[key] = { count: 0, blockedUntil: null };
+    loginAttempts[key].count++;
+    if (loginAttempts[key].count >= MAX_ATTEMPTS) {
+        loginAttempts[key].blockedUntil = Date.now() + BLOCK_MINUTES * 60 * 1000;
+    }
+}
+
+function resetAttempts(key) {
+    delete loginAttempts[key];
+}
+
+
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -199,12 +227,12 @@ const globalLimiter = rateLimit({
 });
 
 const requireAuth = (req, res, next) => {
-    if (!req.session.user) return res.redirect('/login');
+    if (!req.session.user) return res.redirect('/nazriya');
     next();
 };
 const requireHeadAdmin = (req, res, next) => {
-    if (!req.session.user || req.session.user.role !== 'head_admin')
-        return res.status(403).json({ error: 'Access denied' });
+    if (!req.session.user) return res.redirect('/nazriya');
+    if (req.session.user.role !== 'head_admin') return res.redirect('/admin/dashboard');
     next();
 };
 
@@ -364,9 +392,10 @@ app.get('/docs', async (req, res) => {
     }
 });
 
-app.get('/login', (req, res) => res.render('login', { error: req.query.error || null }));
+app.get('/login', (req, res) => res.status(404).send('Not found'));
+app.get('/nazriya', (req, res) => res.render('login', { error: req.query.error || null }));
 
-app.post('/login', async (req, res) => {
+app.post('/nazriya', async (req, res) => {
     const { username, password } = req.body;
     const ip = req.ip || '';
     const ua = req.headers['user-agent'] || '';
@@ -376,25 +405,42 @@ app.post('/login', async (req, res) => {
 
     if (!username || !password) {
         await log(username || null, null, 'failed_missing');
-        return res.redirect('/login?error=missing');
+        return res.redirect('/nazriya?error=missing');
     }
+
+    // ── Brute force check — block by IP and username ──
+    const ipKey   = 'ip:' + ip;
+    const userKey = 'user:' + username.toLowerCase();
+
+    if (isBlocked(ipKey) || isBlocked(userKey)) {
+        await log(username, null, 'failed_blocked');
+        return res.redirect('/nazriya?error=blocked');
+    }
+
     try {
         const user = await dbGet('SELECT * FROM users WHERE username = ?', [username]);
         if (!user) {
+            recordFail(ipKey);
+            recordFail(userKey);
             await log(username, null, 'failed_invalid');
-            return res.redirect('/login?error=invalid');
+            return res.redirect('/nazriya?error=invalid');
         }
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
+            recordFail(ipKey);
+            recordFail(userKey);
             await log(username, null, 'failed_wrong_pass');
-            return res.redirect('/login?error=invalid');
+            return res.redirect('/nazriya?error=invalid');
         }
+        // success — clear attempts
+        resetAttempts(ipKey);
+        resetAttempts(userKey);
         req.session.user = { id: user.id, username: user.username, role: user.role };
         await log(user.username, user.role, 'success');
         res.redirect(user.role === 'head_admin' ? '/head-admin/dashboard' : '/admin/dashboard');
     } catch (err) {
         console.error('Login error:', err);
-        res.redirect('/login?error=server');
+        res.redirect('/nazriya?error=server');
     }
 });
 
