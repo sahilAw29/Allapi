@@ -15,7 +15,7 @@ const app = express();
 
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTxarmy';
-const NEW_BASE = 'https://www.heeriye.godstress.site';
+const NEW_BASE = 'http://100.31.203.71:3000';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
