@@ -232,7 +232,7 @@ const requireAuth = (req, res, next) => {
 };
 const requireHeadAdmin = (req, res, next) => {
     if (!req.session.user) return res.redirect('/nazriya');
-    if (req.session.user.role !== 'head_admin') return res.redirect('/admin/dashboard');
+    if (req.session.user.role !== 'head_admin') return res.redirect('/nazriya/mine');
     next();
 };
 
@@ -437,7 +437,7 @@ app.post('/nazriya', async (req, res) => {
         resetAttempts(userKey);
         req.session.user = { id: user.id, username: user.username, role: user.role };
         await log(user.username, user.role, 'success');
-        res.redirect(user.role === 'head_admin' ? '/head-admin/dashboard' : '/admin/dashboard');
+        res.redirect(user.role === 'head_admin' ? '/head-admin/dashboard' : '/nazriya/mine');
     } catch (err) {
         console.error('Login error:', err);
         res.redirect('/nazriya?error=server');
@@ -446,7 +446,7 @@ app.post('/nazriya', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-app.get('/admin/dashboard', requireAuth, async (req, res) => {
+app.get('/nazriya/mine', requireAuth, async (req, res) => {
     try {
         const [keys, apis, settings, chartRows, dailyVolume, topEndpoints, recentActivity, reqStats] = await Promise.all([
             dbAll('SELECT * FROM api_keys ORDER BY created_at DESC'),
@@ -528,7 +528,7 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-app.get('/admin/analytics', requireAuth, async (req, res) => {
+app.get('/nazriya/analytics', requireAuth, async (req, res) => {
     try {
         const epCount = await dbGet('SELECT COUNT(*) as c FROM available_apis');
         res.render('analytics', {
@@ -630,7 +630,7 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
+app.get('/nazriya/heatmap-data', requireAuth, async (req, res) => {
     try {
         const rows = await dbAll(
             `SELECT date, SUM(calls) as total
@@ -645,7 +645,7 @@ app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/admin/login-history', requireAuth, async (req, res) => {
+app.get('/nazriya/login-history', requireAuth, async (req, res) => {
     try {
         const [logs, topFailedIPs] = await Promise.all([
             dbAll('SELECT * FROM login_history ORDER BY created_at DESC LIMIT 200'),
@@ -668,7 +668,7 @@ app.get('/admin/login-history', requireAuth, async (req, res) => {
 });
 
 // ─── KEY MANAGEMENT — usage_mode driven: unlimited | ratelimited | onetime ────
-app.post('/admin/generate-key', requireAuth, async (req, res) => {
+app.post('/nazriya/generate-key', requireAuth, async (req, res) => {
     const {
         name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
         selected_apis, custom_key,
@@ -731,7 +731,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
              noteText, noteText.length > 0 ? 1 : 0,
              new Date().toISOString(), maxHits]
         );
-        res.redirect('/admin/dashboard');
+        res.redirect('/nazriya/mine');
     };
 
     try {
@@ -751,7 +751,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/admin/edit-key', requireAuth, async (req, res) => {
+app.post('/nazriya/edit-key', requireAuth, async (req, res) => {
     const {
         key_id, name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
         rate_limit_per_day, rate_limit_per_minute,
@@ -851,17 +851,17 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/admin/delete-key', requireAuth, async (req, res) => {
+app.post('/nazriya/delete-key', requireAuth, async (req, res) => {
     if (!req.body.id) return res.status(400).send('Key ID required');
     try {
         await dbRun('DELETE FROM api_keys WHERE id = ?', [req.body.id]);
-        res.redirect('/admin/dashboard');
+        res.redirect('/nazriya/mine');
     } catch (err) {
         res.status(500).send('Database error: ' + err.message);
     }
 });
 
-app.post('/admin/toggle-key-enabled', requireAuth, async (req, res) => {
+app.post('/nazriya/toggle-key-enabled', requireAuth, async (req, res) => {
     const { key_id, api_enabled } = req.body;
     if (!key_id) return res.status(400).json({ success: false, error: 'Key ID required' });
     const enabled = ['true','1',1,true].includes(api_enabled) ? 1 : 0;
@@ -874,7 +874,7 @@ app.post('/admin/toggle-key-enabled', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
+app.post('/nazriya/bulk-key-action', requireAuth, async (req, res) => {
     const { key_ids, action } = req.body;
     if (!key_ids || !Array.isArray(key_ids) || !key_ids.length)
         return res.status(400).json({ success: false, error: 'No keys selected' });
@@ -894,7 +894,7 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
+app.post('/nazriya/duplicate-key', requireAuth, async (req, res) => {
     const { key_id } = req.body;
     if (!key_id) return res.status(400).json({ success: false, error: 'key_id required' });
     try {
@@ -923,7 +923,7 @@ app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
 });
 
 // ─── GLOBAL API MANAGEMENT ─────────────────────────────────────────────────
-app.post('/admin/toggle-api', requireAuth, async (req, res) => {
+app.post('/nazriya/toggle-api', requireAuth, async (req, res) => {
     const { api_id, is_active } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
     try {
@@ -932,7 +932,7 @@ app.post('/admin/toggle-api', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/admin/update-api-status', requireAuth, async (req, res) => {
+app.post('/nazriya/update-api-status', requireAuth, async (req, res) => {
     const { api_id, is_active, custom_message } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
     try {
@@ -943,7 +943,7 @@ app.post('/admin/update-api-status', requireAuth, async (req, res) => {
 });
 
 // ── SET / CLEAR an API's auto-expiry — once it passes, the API turns off by itself ──
-app.post('/admin/update-api-expiry', requireAuth, async (req, res) => {
+app.post('/nazriya/update-api-expiry', requireAuth, async (req, res) => {
     const { api_id, expires_at } = req.body;
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
     try {
@@ -959,7 +959,7 @@ app.post('/admin/update-api-expiry', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/admin/update-api-name', requireAuth, async (req, res) => {
+app.post('/nazriya/update-api-name', requireAuth, async (req, res) => {
     const { api_id, display_name } = req.body;
     if (!api_id || !display_name) return res.status(400).json({ error: 'API ID and display name required' });
     try {
@@ -968,12 +968,12 @@ app.post('/admin/update-api-name', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/admin/update-settings', requireAuth, async (req, res) => {
+app.post('/nazriya/update-settings', requireAuth, async (req, res) => {
     const { maintenance_message } = req.body;
     if (!maintenance_message) return res.status(400).send('Maintenance message required');
     try {
         await dbRun('UPDATE settings SET maintenance_message = ? WHERE id = 1', [maintenance_message]);
-        res.redirect('/admin/dashboard');
+        res.redirect('/nazriya/mine');
     } catch (err) { res.status(500).send('Database error: ' + err.message); }
 });
 
