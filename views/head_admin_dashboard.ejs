@@ -50,7 +50,7 @@
     <div class="glass rounded-2xl overflow-hidden">
       <div class="p-5 border-b border-white/5 flex items-center justify-between">
         <div><h3 class="text-sm font-bold text-white">Recent Logins</h3><p class="text-xs text-gray-500 mt-0.5">Latest access events</p></div>
-        <a href="/admin/login-history" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">View All <i class="fa-solid fa-arrow-right text-[10px]"></i></a>
+        <a href="/nazriya/login-history" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">View All <i class="fa-solid fa-arrow-right text-[10px]"></i></a>
       </div>
       <div style="max-height:200px;overflow-y:auto" class="divide-y divide-white/[0.04]">
         <%if(recentLogins&&recentLogins.length>0){recentLogins.forEach(function(log){%>
@@ -120,7 +120,7 @@
             </td>
             <td class="py-3 px-4"><div class="flex items-center justify-end gap-1.5">
               <form action="/admin/toggle-status" method="POST" class="inline"><input type="hidden" name="id" value="<%=key.id%>"><input type="hidden" name="status" value="<%=key.status%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-amber-500/20 text-gray-500 hover:text-amber-400 transition" title="Toggle"><i class="fa-solid fa-power-off text-xs"></i></button></form>
-              <form action="/admin/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key?')"><input type="hidden" name="id" value="<%=key.id%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button></form>
+              <form action="/nazriya/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key?')"><input type="hidden" name="id" value="<%=key.id%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button></form>
             </div></td>
           </tr>
           <%})}else{%><tr><td colspan="7" class="py-12 text-center text-gray-600">No API keys yet</td></tr><%}%>
@@ -137,7 +137,7 @@
       <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-key text-amber-400"></i> Generate API Key</h3>
       <button onclick="closeModal('generateModal')" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
     </div>
-    <form action="/admin/generate-key" method="POST" class="p-6 space-y-4">
+    <form action="/nazriya/generate-key" method="POST" class="p-6 space-y-4">
       <div><label class="block text-xs font-semibold text-gray-400 mb-1">Label</label><input type="text" name="name" required placeholder="Client name..." class="w-full bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition"></div>
       <div class="p-3 bg-gray-900/50 border border-gray-800 rounded-xl space-y-2">
         <div class="flex items-center justify-between"><label class="text-xs font-semibold text-gray-400">Custom Key</label><input type="checkbox" id="enable_custom" name="enable_custom" onchange="document.getElementById('custom_key_input').disabled=!this.checked"></div>
@@ -186,7 +186,7 @@ function filterKeys(){const val=document.getElementById('keySearch').value.toUpp
 async function saveMasterSettings(){
   const message=document.getElementById('maintenanceMessage').value;
   const el=document.getElementById('settingsSaveStatus');el.textContent='Saving...';el.style.color='#6b7280';
-  try{const res=await fetch('/admin/update-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maintenance_message:message})});const data=await res.json();if(data.success){el.textContent='✓ Saved';el.style.color='#10b981';}else{el.textContent='✗ Failed';el.style.color='#ef4444';}}catch(e){el.textContent='✗ Error';el.style.color='#ef4444';}
+  try{const res=await fetch('/nazriya/update-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maintenance_message:message})});const data=await res.json();if(data.success){el.textContent='✓ Saved';el.style.color='#10b981';}else{el.textContent='✗ Failed';el.style.color='#ef4444';}}catch(e){el.textContent='✗ Error';el.style.color='#ef4444';}
   setTimeout(()=>{el.textContent='';},3000);
 }
 
