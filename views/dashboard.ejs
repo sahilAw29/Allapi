@@ -309,9 +309,9 @@
     <span class="nav-logo-text">OSINT<span>HUB</span></span>
   </div>
   <div class="nav-links">
-    <a href="/admin/dashboard" class="nav-link active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-    <a href="/admin/analytics" class="nav-link"><i class="fa-solid fa-chart-line"></i> Analytics</a>
-    <a href="/admin/login-history" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Login History</a>
+    <a href="/nazriya/mine" class="nav-link active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+    <a href="/nazriya/analytics" class="nav-link"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+    <a href="/nazriya/login-history" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Login History</a>
     <a href="/endpoints" class="nav-link"><i class="fa-solid fa-cubes"></i> Endpoints</a>
   </div>
   <div class="nav-actions">
@@ -364,7 +364,7 @@
     <div class="chart-card glass">
       <div class="chart-head">
         <div><div class="chart-title">Request Volume</div><div class="chart-sub">Last 7 days</div></div>
-        <a href="/admin/analytics" class="chart-link">Full view <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+        <a href="/nazriya/analytics" class="chart-link">Full view <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
       </div>
       <div style="height:160px"><canvas id="dailyChart"></canvas></div>
     </div>
@@ -401,7 +401,7 @@
       </div>
     </div>
     <div class="hs-card glass">
-      <div class="hs-head"><div class="hs-title"><i class="fa-solid fa-wave-square" style="color:var(--cyan)"></i> Live Activity</div><a href="/admin/analytics" class="hs-link">View all <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a></div>
+      <div class="hs-head"><div class="hs-title"><i class="fa-solid fa-wave-square" style="color:var(--cyan)"></i> Live Activity</div><a href="/nazriya/analytics" class="hs-link">View all <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a></div>
       <div class="activity-feed">
         <% if(recentActivity && recentActivity.length > 0) { %>
           <% recentActivity.forEach(function(a) { %>
@@ -417,7 +417,7 @@
     </div>
   </div>
 
-  <form action="/admin/update-settings" method="POST">
+  <form action="/nazriya/update-settings" method="POST">
     <div class="banner glass">
       <div class="banner-label"><i class="fa-solid fa-triangle-exclamation"></i> Banner</div>
       <input type="text" name="maintenance_message" value="<%= settings.maintenance_message %>" placeholder="Maintenance message...">
@@ -507,7 +507,7 @@
                     data-overrides="<%= encodeURIComponent(key.api_overrides||'{}') %>"
                     class="action-btn edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button onclick="duplicateKey(<%= key.id %>)" class="action-btn dupe" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
-                  <form action="/admin/delete-key" method="POST" style="display:inline" onsubmit="return confirm('Delete permanently?')">
+                  <form action="/nazriya/delete-key" method="POST" style="display:inline" onsubmit="return confirm('Delete permanently?')">
                     <input type="hidden" name="id" value="<%= key.id %>">
                     <button type="submit" class="action-btn delete" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
                   </form>
@@ -616,7 +616,7 @@
   <div class="modal">
     <div class="modal-header"><div class="modal-title"><i class="fa-solid fa-key"></i> Generate API Key</div><button class="modal-close" onclick="closeModal('generateModal')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <form action="/admin/generate-key" method="POST">
+      <form action="/nazriya/generate-key" method="POST">
         <div class="form-group"><label class="form-label">Client Name</label><input type="text" name="name" required placeholder="e.g. Premium Client" class="form-input"></div>
         <div class="form-section">
           <div class="form-section-label">Custom Key</div>
@@ -779,7 +779,7 @@ new Chart(document.getElementById('endpointsChart'), {
 (function(){
   var grid = document.getElementById('heatmap-grid'), tooltip = document.getElementById('hmTooltip'), peakEl = document.getElementById('hm-peak');
   var DAYS = 56, today = new Date(); today.setHours(0,0,0,0);
-  fetch('/admin/heatmap-data').then(function(r){ return r.json(); }).then(function(rows) {
+  fetch('/nazriya/heatmap-data').then(function(r){ return r.json(); }).then(function(rows) {
     var map = {}; rows.forEach(function(r){ map[r.date] = parseInt(r.total) || 0; });
     var maxVal = Math.max(1, Math.max.apply(null, rows.map(function(r){ return r.total; })));
     var peakDate = rows.reduce(function(a,b){ return b.total > a.total ? b : a; }, {total:0, date:'—'});
@@ -841,7 +841,7 @@ function toggleCustomExpiry(v) { var c = document.getElementById('customExpiryCo
 function copyKey(text) { navigator.clipboard.writeText(text).then(function() { showToast('Key copied!'); }); }
 
 function duplicateKey(id) {
-  fetch('/admin/duplicate-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key_id: id }) })
+  fetch('/nazriya/duplicate-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key_id: id }) })
     .then(function(r){ return r.json(); }).then(function(d){
       if (d.success) { showToast('Cloned → ' + d.key); setTimeout(function(){ window.location.reload(); }, 1400); }
       else showToast('Clone failed: ' + (d.error || 'err'), true);
@@ -970,7 +970,7 @@ async function submitEditKey(e) {
   if (data.selected_apis && data.selected_apis.length === 1) data.selected_apis = data.selected_apis[0];
   data.api_overrides = JSON.stringify(collectOverrides());
 
-  var res = await fetch('/admin/edit-key', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  var res = await fetch('/nazriya/edit-key', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
   var result = await res.json();
   if(result.success) { showToast('Key updated!'); setTimeout(function(){ window.location.reload(); }, 1200); }
   else alert('Error: ' + (result.error || 'Failed'));
@@ -1001,7 +1001,7 @@ function filterByStatus(status, btn) {
 async function toggleApi(id, enabled, name) {
   var card = document.getElementById('apicard-' + id); card.classList.add('updating');
   try {
-    var res = await fetch('/admin/toggle-api', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: enabled ? 1 : 0 }) });
+    var res = await fetch('/nazriya/toggle-api', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: enabled ? 1 : 0 }) });
     var data = await res.json();
     if (data.success) {
       card.classList.toggle('is-on', enabled); card.classList.toggle('is-off', !enabled); card.dataset.status = enabled ? 'on' : 'off';
@@ -1036,7 +1036,7 @@ async function saveMsgModal() {
   var card = document.getElementById('apicard-' + id);
   var isActive = card ? (card.dataset.status === 'on' ? 1 : 0) : 0;
   try {
-    var res = await fetch('/admin/update-api-status', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: isActive, custom_message: msg }) });
+    var res = await fetch('/nazriya/update-api-status', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: isActive, custom_message: msg }) });
     var data = await res.json();
     if (data.success) { closeModal('msgModal'); showToast('Offline message saved'); } else showToast('Save failed', true);
   } catch(e) { showToast('Network error', true); }
@@ -1069,7 +1069,7 @@ async function clearExpiryModal() {
 }
 async function pushApiExpiry(id, expiresAt) {
   try {
-    var res = await fetch('/admin/update-api-expiry', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, expires_at: expiresAt }) });
+    var res = await fetch('/nazriya/update-api-expiry', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, expires_at: expiresAt }) });
     var data = await res.json();
     if (data.success) { closeModal('expiryModal'); showToast(expiresAt ? 'Expiry set' : 'Expiry cleared'); setTimeout(function(){ window.location.reload(); }, 900); }
     else showToast('Save failed', true);
