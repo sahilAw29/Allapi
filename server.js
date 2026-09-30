@@ -1206,7 +1206,7 @@ autoExpireApis();
 setInterval(autoExpireApis, 60 * 1000);
 
 // ─── SERVER + WEBSOCKET ───────────────────────────────────────────────────────
-const PORT   = process.env.PORT || 3000;
+const PORT   = process.env.PORT || 5000;
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server, path: '/ws/hits' });
 
