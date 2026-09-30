@@ -73,7 +73,7 @@
       <%if(admins&&admins.length>0){admins.forEach(function(admin){%>
       <div class="flex items-center justify-between bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-3">
         <div><div class="text-sm font-semibold text-gray-200 font-mono"><%=admin.username%></div><div class="text-[10px] text-amber-400 mt-0.5 uppercase tracking-wider"><%=admin.role||'admin'%></div><div class="text-[10px] text-gray-700 mt-0.5"><%=admin.created_at?new Date(admin.created_at).toLocaleDateString():''%></div></div>
-        <button onclick="removeAdmin(<%=admin.id%>)" class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+        <button onclick="removeAdmin(<%=admin._id%>)" class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
       </div>
       <%})}else{%><p class="text-xs text-gray-600 py-4">No sub-admins yet.</p><%}%>
     </div>
@@ -119,8 +119,8 @@
               <%}else{%><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20"><%=key.status%></span><%}%>
             </td>
             <td class="py-3 px-4"><div class="flex items-center justify-end gap-1.5">
-              <form action="/admin/toggle-status" method="POST" class="inline"><input type="hidden" name="id" value="<%=key.id%>"><input type="hidden" name="status" value="<%=key.status%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-amber-500/20 text-gray-500 hover:text-amber-400 transition" title="Toggle"><i class="fa-solid fa-power-off text-xs"></i></button></form>
-              <form action="/nazriya/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key?')"><input type="hidden" name="id" value="<%=key.id%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button></form>
+              <form action="/admin/toggle-status" method="POST" class="inline"><input type="hidden" name="id" value="<%=key._id%>"><input type="hidden" name="status" value="<%=key.status%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-amber-500/20 text-gray-500 hover:text-amber-400 transition" title="Toggle"><i class="fa-solid fa-power-off text-xs"></i></button></form>
+              <form action="/nazriya/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key?')"><input type="hidden" name="id" value="<%=key._id%>"><button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button></form>
             </div></td>
           </tr>
           <%})}else{%><tr><td colspan="7" class="py-12 text-center text-gray-600">No API keys yet</td></tr><%}%>
