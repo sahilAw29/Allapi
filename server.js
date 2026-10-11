@@ -112,46 +112,39 @@ const settingsSchema = new mongoose.Schema({
 });
 
 // ─── MODELS ───────────────────────────────────────────────────────────────────
-const User             = mongoose.model('User',             userSchema);
-const ApiKey           = mongoose.model('ApiKey',           apiKeySchema);
-const RateLimitTracking= mongoose.model('RateLimitTracking',rateLimitTrackingSchema);
-const Analytics        = mongoose.model('Analytics',        analyticsSchema);
-const DailyCalls       = mongoose.model('DailyCalls',       dailyCallsSchema);
-const AvailableApi     = mongoose.model('AvailableApi',     availableApiSchema);
-const LoginHistory     = mongoose.model('LoginHistory',     loginHistorySchema);
-const Settings         = mongoose.model('Settings',         settingsSchema);
+const User              = mongoose.model('User',             userSchema);
+const ApiKey            = mongoose.model('ApiKey',           apiKeySchema);
+const RateLimitTracking = mongoose.model('RateLimitTracking',rateLimitTrackingSchema);
+const Analytics         = mongoose.model('Analytics',        analyticsSchema);
+const DailyCalls        = mongoose.model('DailyCalls',       dailyCallsSchema);
+const AvailableApi      = mongoose.model('AvailableApi',     availableApiSchema);
+const LoginHistory      = mongoose.model('LoginHistory',     loginHistorySchema);
+const Settings          = mongoose.model('Settings',         settingsSchema);
 
 // ─── SEED DATA ────────────────────────────────────────────────────────────────
 async function seedData() {
-    // Settings
     const settingsCount = await Settings.countDocuments();
-    if (!settingsCount) {
+    if (!settingsCount)
         await Settings.create({ maintenance_message: 'API is currently under maintenance.' });
-    }
 
-    // Head admin
     const mainUser = await User.findOne({ username: 'main' });
-    if (!mainUser) {
+    if (!mainUser)
         await User.create({
             username  : 'main',
             password  : await bcrypt.hash('sahil', 10),
             role      : 'head_admin',
             created_by: 'system'
         });
-    }
 
-    // Default admin
     const sahilUser = await User.findOne({ username: 'sahil' });
-    if (!sahilUser) {
+    if (!sahilUser)
         await User.create({
             username  : 'sahil',
             password  : await bcrypt.hash('sexy', 10),
             role      : 'admin',
             created_by: 'main'
         });
-    }
 
-    // APIs
     const apiCount = await AvailableApi.countDocuments();
     if (!apiCount) {
         const APIs = [
@@ -191,7 +184,6 @@ async function seedData() {
     }
 }
 
-// Wait for mongoose connection then seed
 mongoose.connection.once('open', () => {
     seedData().catch(err => console.error('Seed error:', err));
 });
@@ -305,13 +297,14 @@ const apiProxyMap = {
             headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
             timeout: 30000
         });
-        const out = { success: true, reply: r.data.choices?.[0]?.message?.content || '', owner: OWNER, channel: CHANNEL };
+        const out = { success: true, reply: r.data.choices?.[0]?.message?.content || '' };
         if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
         if (keyData.note_enabled && keyData.key_note) out.key_note = keyData.key_note;
         return res.json(out);
     }
 };
 
+// ─── CLEAN RESPONSE — by/channel removed ─────────────────────────────────────
 const REMOVE_FIELDS = new Set([
     'owner','OWNER','channel','CHANNEL','telegram','contact','instagram','twitter',
     'fb','facebook','website','github','created_by','createdBy','owner_username',
@@ -319,9 +312,16 @@ const REMOVE_FIELDS = new Set([
     'api_source','API_Source','developer','Developer','dev','Dev','invalidayushh',
     'ftgamerv2','ftgamer2','@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush',
     '@InvalidAyush','invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep',
-    'Kon_Hu_Mai','support','@raxusss','raxusss','Raxusss','Support','help','Help','by','ftgamer'
+    'Kon_Hu_Mai','support','@raxusss','raxusss','Raxusss','Support','help','Help',
+    'by','By','BY',
+    'ftgamer'
 ]);
-const REMOVE_STRINGS = ['@raxusss','raxusss','InvalidAyush','@InvalidAyush','invalidayush','ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2'];
+
+const REMOVE_STRINGS = [
+    '@raxusss','raxusss','InvalidAyush','@InvalidAyush','invalidayush',
+    'ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2',
+    '@OSINTxarmy','@OSINTxher'
+];
 
 function cleanResponse(data) {
     if (!data || typeof data !== 'object') return data;
@@ -335,8 +335,7 @@ function cleanResponse(data) {
         }
     }
     clean(obj);
-    obj.owner   = OWNER;
-    obj.channel = CHANNEL;
+    // owner/channel inject HATAYA — clean response only
     return obj;
 }
 
@@ -460,7 +459,6 @@ app.get('/nazriya/mine', requireAuth, async (req, res) => {
             Settings.findOne()
         ]);
 
-        // Chart data — last 7 days
         const chartAgg = await DailyCalls.aggregate([
             { $group: { _id: '$date', total_calls: { $sum: '$calls' } } },
             { $sort: { _id: -1 } },
@@ -468,7 +466,6 @@ app.get('/nazriya/mine', requireAuth, async (req, res) => {
         ]);
         const chartRows = chartAgg.map(r => ({ date: r._id, total_calls: r.total_calls })).reverse();
 
-        // Top endpoints
         const topEndpoints = await Analytics.aggregate([
             { $group: { _id: '$endpoint', hits: { $sum: 1 } } },
             { $sort: { hits: -1 } },
@@ -476,10 +473,8 @@ app.get('/nazriya/mine', requireAuth, async (req, res) => {
             { $project: { endpoint: '$_id', hits: 1, _id: 0 } }
         ]);
 
-        // Recent activity
         const recentActivity = await Analytics.find().sort({ created_at: -1 }).limit(8);
 
-        // Stats
         const totalReq   = await Analytics.countDocuments();
         const successReq = await Analytics.countDocuments({ status_code: { $gte: 200, $lt: 300 } });
         const successRate= totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
@@ -579,7 +574,6 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
         const avgLatency = latAgg.length && latAgg[0].avg ? Math.round(latAgg[0].avg) : 0;
         const errorRate  = totalReq > 0 ? ((totalError / totalReq) * 100).toFixed(1) : '0.0';
 
-        // Hourly chart — last 24h
         const hourlyAgg = await Analytics.aggregate([
             { $match: { created_at: { $gte: new Date(Date.now() - 24 * 3600 * 1000) } } },
             { $group: {
@@ -601,7 +595,6 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
             hourlyChart.push({ label: hh + ':00', hits: row ? row.hits : 0, success: row ? row.success : 0, error: row ? row.error : 0 });
         }
 
-        // Top endpoints
         const endpointAgg = await Analytics.aggregate([
             { $group: {
                 _id    : '$endpoint',
@@ -626,14 +619,12 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
             errorRate   : ep.hits > 0 ? ((ep.error / ep.hits) * 100).toFixed(1) : '0.0'
         }));
 
-        // Status distribution
         const statusAgg = await Analytics.aggregate([
             { $group: { _id: '$status_code', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
         const statusDist = statusAgg.map(s => ({ code: s._id || 0, count: s.count }));
 
-        // Recent requests
         const recentRows = await Analytics.find().sort({ created_at: -1 }).limit(30);
         const recentRequests = recentRows.map(r => ({
             time      : r.created_at,
@@ -935,7 +926,7 @@ app.post('/nazriya/duplicate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── GLOBAL API MANAGEMENT ─────────────────────────────────────────────────
+// ─── GLOBAL API MANAGEMENT ────────────────────────────────────────────────────
 app.post('/nazriya/toggle-api', requireAuth, async (req, res) => {
     const { api_id, is_active } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
@@ -1022,16 +1013,14 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (!userKey)
             return res.status(401).json({ error: 'API key required', contact: OWNER });
 
-        // Global API status + auto-expiry lazy heal
         const targetApi = await AvailableApi.findOne({
             $or: [{ name: endpoint }, { endpoint: `/api/${endpoint}` }]
         });
         if (targetApi) {
             const apiExpired = targetApi.expires_at && new Date(targetApi.expires_at) < new Date();
             if (!targetApi.is_active || apiExpired) {
-                if (apiExpired && targetApi.is_active) {
+                if (apiExpired && targetApi.is_active)
                     AvailableApi.findByIdAndUpdate(targetApi._id, { is_active: false }).catch(() => {});
-                }
                 return res.json({
                     status : false,
                     message: targetApi.custom_message || (apiExpired ? 'This API has expired.' : 'This API is currently turned off.')
@@ -1055,9 +1044,8 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
         try {
             const overrides = JSON.parse(keyData.api_overrides || '{}');
-            if (overrides[endpoint] && overrides[endpoint].enabled === false) {
+            if (overrides[endpoint] && overrides[endpoint].enabled === false)
                 return res.json({ status: false, message: overrides[endpoint].message || 'This API is currently turned off for this key.' });
-            }
         } catch(_) {}
 
         if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
@@ -1082,7 +1070,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const perMin = parseInt(keyData.rate_limit_per_minute) || 0;
             const nowTs  = Math.floor(Date.now() / 60000);
 
-            // Daily count
             const dailyAgg = await RateLimitTracking.aggregate([
                 { $match: { api_key: userKey, date: today } },
                 { $group: { _id: null, total: { $sum: '$requests' } } }
@@ -1109,7 +1096,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                     });
             }
 
-            // Upsert rate limit tracking
             await RateLimitTracking.findOneAndUpdate(
                 { api_key: userKey, date: today, minute_timestamp: nowTs },
                 { $inc: { requests: 1 } },
@@ -1121,7 +1107,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 rateLimitInfo.per_minute = { limit: perMin, used: minCount + 1, remaining: Math.max(0, perMin - minCount - 1) };
         }
 
-        // Increment daily calls + hits
         DailyCalls.findOneAndUpdate(
             { api_key: userKey, date: today },
             { $inc: { calls: 1 } },
@@ -1192,9 +1177,8 @@ app.post('/nazriya/git-update', requireAuth, (req, res) => {
     exec('git -C ' + __dirname + ' pull', (err, stdout, stderr) => {
         const output = (stdout || '') + (stderr || '');
         if (err) return res.json({ output: '❌ git pull failed:\n' + output, restarting: false });
-        if (output.includes('Already up to date')) {
+        if (output.includes('Already up to date'))
             return res.json({ output: '✅ Already up to date. No restart needed.\n' + output, restarting: false });
-        }
         res.json({ output: '✅ Pull success:\n' + output, restarting: true });
         setTimeout(() => {
             exec('pm2 restart allapi', (e2, o2, s2) => {
