@@ -29,7 +29,6 @@ mongoose.connect(MONGO_URI)
     .catch(err => { console.error('❌ MongoDB connection error:', err); process.exit(1); });
 
 // ─── SCHEMAS ──────────────────────────────────────────────────────────────────
-
 const userSchema = new mongoose.Schema({
     username   : { type: String, unique: true, required: true },
     password   : { type: String, required: true },
@@ -290,37 +289,39 @@ const apiProxyMap = {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
         const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
-            model   : 'mistral-small-latest',
-            messages: [{ role: 'user', content: message }],
+            model     : 'mistral-small-latest',
+            messages  : [{ role: 'user', content: message }],
             max_tokens: 1024
         }, {
             headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
             timeout: 30000
         });
-        const out = { success: true, reply: r.data.choices?.[0]?.message?.content || '' };
+        const out = {
+            success  : true,
+            reply    : r.data.choices?.[0]?.message?.content || '',
+            developer: '@flirts_x'
+        };
         if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
         if (keyData.note_enabled && keyData.key_note) out.key_note = keyData.key_note;
         return res.json(out);
     }
 };
 
-// ─── CLEAN RESPONSE — by/channel removed ─────────────────────────────────────
+// ─── CLEAN RESPONSE ───────────────────────────────────────────────────────────
 const REMOVE_FIELDS = new Set([
     'owner','OWNER','channel','CHANNEL','telegram','contact','instagram','twitter',
     'fb','facebook','website','github','created_by','createdBy','owner_username',
     'owner_channel','credit','Credits','Credit','Source','source','provider','Provider',
-    'api_source','API_Source','developer','Developer','dev','Dev','invalidayushh',
-    'ftgamerv2','ftgamer2','@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush',
-    '@InvalidAyush','invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep',
-    'Kon_Hu_Mai','support','@raxusss','raxusss','Raxusss','Support','help','Help',
-    'by','By','BY',
-    'ftgamer'
+    'api_source','API_Source','invalidayushh','ftgamerv2','ftgamer2',
+    '@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush','@InvalidAyush',
+    'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
+    'support','@raxusss','raxusss','Raxusss','Support','help','Help',
+    'by','By','BY','ftgamer'
 ]);
 
 const REMOVE_STRINGS = [
     '@raxusss','raxusss','InvalidAyush','@InvalidAyush','invalidayush',
-    'ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2',
-    '@OSINTxarmy','@OSINTxher'
+    'ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2','@OSINTxarmy','@OSINTxher'
 ];
 
 function cleanResponse(data) {
@@ -335,12 +336,11 @@ function cleanResponse(data) {
         }
     }
     clean(obj);
-    // owner/channel inject HATAYA — clean response only
+    obj.developer = '@flirts_x';   // ← inject
     return obj;
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-
 app.get('/', async (req, res) => {
     try {
         const [keys, apis] = await Promise.all([
@@ -474,13 +474,11 @@ app.get('/nazriya/mine', requireAuth, async (req, res) => {
         ]);
 
         const recentActivity = await Analytics.find().sort({ created_at: -1 }).limit(8);
-
-        const totalReq   = await Analytics.countDocuments();
-        const successReq = await Analytics.countDocuments({ status_code: { $gte: 200, $lt: 300 } });
-        const successRate= totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
-
-        const activeApis = (apis || []).filter(a => a.is_active).length;
-        const recent = (recentActivity || []).map(r => ({
+        const totalReq       = await Analytics.countDocuments();
+        const successReq     = await Analytics.countDocuments({ status_code: { $gte: 200, $lt: 300 } });
+        const successRate    = totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
+        const activeApis     = (apis || []).filter(a => a.is_active).length;
+        const recent         = (recentActivity || []).map(r => ({
             endpoint: '/api/' + r.endpoint,
             code    : r.status_code,
             ok      : r.status_code >= 200 && r.status_code < 300,
@@ -497,9 +495,9 @@ app.get('/nazriya/mine', requireAuth, async (req, res) => {
             topEndpoints   : topEndpoints || [],
             recentActivity : recent,
             health: {
-                uptime      : Math.floor(process.uptime()),
+                uptime     : Math.floor(process.uptime()),
                 activeApis,
-                totalApis   : (apis || []).length,
+                totalApis  : (apis || []).length,
                 successRate,
                 totalReq
             },
@@ -689,9 +687,8 @@ app.get('/nazriya/login-history', requireAuth, async (req, res) => {
 app.post('/nazriya/generate-key', requireAuth, async (req, res) => {
     const {
         name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
-        selected_apis, custom_key,
-        rate_limit_per_day, rate_limit_per_minute, key_note,
-        custom_expiry_date, custom_expiry_time
+        selected_apis, custom_key, rate_limit_per_day, rate_limit_per_minute,
+        key_note, custom_expiry_date, custom_expiry_time
     } = req.body;
     const isCustomEnabled = req.body.enable_custom === 'on';
 
@@ -772,8 +769,8 @@ app.post('/nazriya/generate-key', requireAuth, async (req, res) => {
 app.post('/nazriya/edit-key', requireAuth, async (req, res) => {
     const {
         key_id, name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
-        rate_limit_per_day, rate_limit_per_minute,
-        key_note, status, selected_apis, api_enabled, api_overrides
+        rate_limit_per_day, rate_limit_per_minute, key_note, status,
+        selected_apis, api_enabled, api_overrides
     } = req.body;
 
     if (!key_id) return res.status(400).json({ success: false, error: 'Key ID required' });
@@ -880,7 +877,6 @@ app.post('/nazriya/bulk-key-action', requireAuth, async (req, res) => {
     const { key_ids, action } = req.body;
     if (!key_ids || !Array.isArray(key_ids) || !key_ids.length)
         return res.status(400).json({ success: false, error: 'No keys selected' });
-
     try {
         if      (action === 'enable')  await ApiKey.updateMany({ _id: { $in: key_ids } }, { api_enabled: true });
         else if (action === 'disable') await ApiKey.updateMany({ _id: { $in: key_ids } }, { api_enabled: false });
@@ -897,7 +893,6 @@ app.post('/nazriya/duplicate-key', requireAuth, async (req, res) => {
     try {
         const src = await ApiKey.findById(key_id);
         if (!src) return res.status(404).json({ success: false, error: 'Key not found' });
-
         const newKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
         await ApiKey.create({
             key                  : newKey,
