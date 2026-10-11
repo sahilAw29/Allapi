@@ -285,7 +285,7 @@ const apiProxyMap = {
     'leak'        : p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
     'leakpro'     : p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','quiry','term')}`,
     'ai-image'    : p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
-    'mistral': async (p, res, keyData, rateLimitInfo) => {
+    'mistral': async (p, res, keyData) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
         const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
@@ -301,7 +301,6 @@ const apiProxyMap = {
             reply    : r.data.choices?.[0]?.message?.content || '',
             developer: '@flirts_x'
         };
-        if (Object.keys(rateLimitInfo).length) out.rate_limit = rateLimitInfo;
         if (keyData.note_enabled && keyData.key_note) out.key_note = keyData.key_note;
         return res.json(out);
     }
@@ -316,7 +315,9 @@ const REMOVE_FIELDS = new Set([
     '@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush','@InvalidAyush',
     'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
     'support','@raxusss','raxusss','Raxusss','Support','help','Help',
-    'by','By','BY','ftgamer'
+    'by','By','BY','ftgamer',
+    'rate_limit','rateLimit','rate_limit_info',
+    'timestamp','Timestamp','time','Time'
 ]);
 
 const REMOVE_STRINGS = [
@@ -336,7 +337,7 @@ function cleanResponse(data) {
         }
     }
     clean(obj);
-    obj.developer = '@flirts_x';   // ← inject
+    obj.developer = '@flirts_x';
     return obj;
 }
 
@@ -1059,7 +1060,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             });
         }
 
-        let rateLimitInfo = {};
+        // ─── RATE LIMIT — internal only, never sent to response ──────────────
         if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
             const perDay = parseInt(keyData.rate_limit_per_day)    || 100;
             const perMin = parseInt(keyData.rate_limit_per_minute) || 0;
@@ -1073,21 +1074,19 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
             if (perDay > 0 && dailyCount >= perDay)
                 return res.status(429).json({
-                    success: false, error: `Daily limit exceeded (${perDay}/day)`,
-                    rate_limit: { per_day: { limit: perDay, used: dailyCount, remaining: 0 } }, contact: OWNER
+                    success: false,
+                    error  : `Daily limit exceeded (${perDay}/day)`,
+                    contact: OWNER
                 });
 
-            let minCount = 0;
             if (perMin > 0) {
-                const minDoc = await RateLimitTracking.findOne({ api_key: userKey, minute_timestamp: nowTs });
-                minCount = minDoc ? minDoc.requests : 0;
+                const minDoc  = await RateLimitTracking.findOne({ api_key: userKey, minute_timestamp: nowTs });
+                const minCount = minDoc ? minDoc.requests : 0;
                 if (minCount >= perMin)
                     return res.status(429).json({
-                        success: false, error: `Per-minute limit exceeded (${perMin}/min)`,
-                        rate_limit: {
-                            per_minute: { limit: perMin, used: minCount, remaining: 0 },
-                            per_day   : { limit: perDay, used: dailyCount, remaining: Math.max(0, perDay - dailyCount) }
-                        }, contact: OWNER
+                        success: false,
+                        error  : `Per-minute limit exceeded (${perMin}/min)`,
+                        contact: OWNER
                     });
             }
 
@@ -1096,10 +1095,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 { $inc: { requests: 1 } },
                 { upsert: true }
             );
-
-            rateLimitInfo.per_day = { limit: perDay, used: dailyCount + 1, remaining: Math.max(0, perDay - dailyCount - 1) };
-            if (perMin > 0)
-                rateLimitInfo.per_minute = { limit: perMin, used: minCount + 1, remaining: Math.max(0, perMin - minCount - 1) };
         }
 
         DailyCalls.findOneAndUpdate(
@@ -1118,7 +1113,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         const params = { ...req.query, ...req.body };
 
         if (endpoint === 'mistral') {
-            try { await proxyFn(params, res, keyData, rateLimitInfo); }
+            try { await proxyFn(params, res, keyData); }
             catch (err) {
                 console.error('Mistral error:', err);
                 res.status(500).json({ error: 'Mistral request failed', details: err.message });
@@ -1132,7 +1127,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const responseMs = Date.now() - reqStart;
             let data         = cleanResponse(upstream.data);
 
-            if (Object.keys(rateLimitInfo).length) data.rate_limit = rateLimitInfo;
+            // key_note inject if enabled
             if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
 
             Analytics.create({
