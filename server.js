@@ -13,7 +13,7 @@ const mongoose  = require('mongoose');
 const app = express();
 
 const OWNER    = '@sahilxalone';
-const CHANNEL  = '@OSINTxarmy';
+const CHANNEL  = '@OSINTxher';
 const NEW_BASE = 'http://68.211.89.86:3000';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
@@ -319,7 +319,7 @@ const REMOVE_FIELDS = new Set([
     'api_source','API_Source','developer','Developer','dev','Dev','invalidayushh',
     'ftgamerv2','ftgamer2','@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush',
     '@InvalidAyush','invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep',
-    'Kon_Hu_Mai','support','@raxusss','raxusss','Raxusss','Support','help','Help'
+    'Kon_Hu_Mai','support','@raxusss','raxusss','Raxusss','Support','help','Help','by','ftgamer'
 ]);
 const REMOVE_STRINGS = ['@raxusss','raxusss','InvalidAyush','@InvalidAyush','invalidayush','ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2'];
 
