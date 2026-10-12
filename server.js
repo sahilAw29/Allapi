@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express   = require('express');
 const session   = require('express-session');
-const MongoStore = require('connect-mongo');
+
 const bcrypt    = require('bcrypt');
 const axios     = require('axios');
 const rateLimit = require('express-rate-limit');
@@ -223,11 +223,6 @@ app.use(session({
     secret           : process.env.SESSION_SECRET || 'osint_secret_2024',
     resave           : false,
     saveUninitialized: false,
-    store            : MongoStore.create({
-        mongoUrl   : MONGO_URI,
-        ttl        : 24 * 60 * 60,
-        autoRemove : 'native'
-    }),
     cookie: {
         maxAge  : 24 * 60 * 60 * 1000,
         secure  : process.env.NODE_ENV === 'production',
@@ -1211,20 +1206,26 @@ setInterval(autoExpireApis, 60 * 1000);
 // ─── SERVER + WEBSOCKET ───────────────────────────────────────────────────────
 const PORT   = process.env.PORT || 5000;
 const server = http.createServer(app);
-const wss    = new WebSocketServer({ server, path: '/ws/hits' });
+
+let wss = null;
+try {
+    wss = new WebSocketServer({ server, path: '/ws/hits' });
+    setInterval(() => {
+        wss.clients.forEach(client => {
+            if (client.readyState === 1) client.ping();
+        });
+    }, 25000);
+} catch(e) {
+    console.log('WebSocket not available (Vercel serverless)');
+}
 
 function wsBroadcast(payload) {
+    if (!wss) return;
     const msg = JSON.stringify(payload);
     wss.clients.forEach(client => {
         if (client.readyState === 1) client.send(msg);
     });
 }
-
-setInterval(() => {
-    wss.clients.forEach(client => {
-        if (client.readyState === 1) client.ping();
-    });
-}, 25000);
 
 server.listen(PORT, () => console.log(`\n🚀 OSINT API HUB (MongoDB) — PORT ${PORT}`));
 module.exports = app;
