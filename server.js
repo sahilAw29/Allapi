@@ -325,7 +325,8 @@ const REMOVE_FIELDS = new Set([
     'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
     'support','@raxusss','raxusss','Raxusss','Support','help','Help',
     'by','By','BY','ftgamer',
-    'rate_limit','rateLimit','rate_limit_info','timestamp','Timestamp'
+    'rate_limit','rateLimit','rate_limit_info',
+    'timestamp','Timestamp'
 ]);
 
 const REMOVE_STRINGS = [
@@ -1076,10 +1077,13 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
             if (perDay > 0 && dailyCount >= perDay)
                 return res.status(429).json({
-                    error  : 'Daily quota exceeded',
-                    used   : dailyCount,
-                    limit  : perDay,
-                    message: `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`
+                    status   : false,
+                    error    : 'Daily quota exceeded',
+                    used     : dailyCount,
+                    limit    : perDay,
+                    remaining: 0,
+                    message  : `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`,
+                    developer: '@flirts_x'
                 });
 
             if (perMin > 0) {
@@ -1127,7 +1131,12 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const targetUrl  = proxyFn(params);
             const upstream   = await axios.get(targetUrl, { timeout: 30000 });
             const responseMs = Date.now() - reqStart;
-            let data         = cleanResponse(upstream.data);
+            const raw  = cleanResponse(upstream.data);
+            let data   = {
+                ...raw,
+                response_time_ms: responseMs,
+                developer        : '@flirts_x'
+            };
 
             if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
 
