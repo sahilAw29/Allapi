@@ -279,7 +279,7 @@ const apiProxyMap = {
     'pan'         : p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
     'family'      : p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
     'email-info'  : p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
-    'veh-to-num'  : p => `${NEW_BASE}/api/veh-info?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'veh-to-num'  : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
     'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
     'vehicle'     : p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
     'rc'          : p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
