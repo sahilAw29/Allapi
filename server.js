@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express   = require('express');
 const session   = require('express-session');
-
+const MongoStore = require('connect-mongo');
 const bcrypt    = require('bcrypt');
 const axios     = require('axios');
 const rateLimit = require('express-rate-limit');
@@ -159,7 +159,7 @@ async function seedData() {
             ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'PAN card details'],
             ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
             ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
-            ['veh2num',   '🚗 Vehicle to Number',   '/api/veh2num',   '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle to owner number'],
+            ['veh2num',      '🚗 Vehicle to Number',   '/api/veh2num',      '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
             ['vehicle-info', '🚘 Vehicle Info',        '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
             ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
             ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
@@ -181,6 +181,19 @@ async function seedData() {
             is_active: true, custom_message: 'API is currently turned off.'
         })));
         console.log('✅ APIs seeded');
+    }
+
+    // ─── AUTO-FIX: rename old wrong api names in DB ───────────────────────────
+    const fixes = [
+        { old: 'veh-to-num',  name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+        { old: 'vec-to-num',  name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+        { old: 'veh2num-old', name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+    ];
+    for (const f of fixes) {
+        await AvailableApi.findOneAndUpdate(
+            { name: f.old },
+            { name: f.name, endpoint: f.endpoint, display_name: f.display_name }
+        );
     }
 }
 
@@ -223,6 +236,11 @@ app.use(session({
     secret           : process.env.SESSION_SECRET || 'osint_secret_2024',
     resave           : false,
     saveUninitialized: false,
+    store            : MongoStore.create({
+        mongoUrl   : MONGO_URI,
+        ttl        : 24 * 60 * 60,
+        autoRemove : 'native'
+    }),
     cookie: {
         maxAge  : 24 * 60 * 60 * 1000,
         secure  : process.env.NODE_ENV === 'production',
@@ -279,7 +297,8 @@ const apiProxyMap = {
     'pan'         : p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
     'family'      : p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
     'email-info'  : p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
-    'veh2num'  : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'veh-to-num'  : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'veh2num'     : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
     'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
     'vehicle'     : p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
     'rc'          : p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
@@ -325,12 +344,7 @@ const REMOVE_FIELDS = new Set([
     'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
     'support','@raxusss','raxusss','Raxusss','Support','help','Help',
     'by','By','BY','ftgamer',
-    // rate limit fields — remove from upstream
-    'rate_limit','rateLimit','rate_limit_info','per_day','per_minute',
-    // timestamp fields — remove from upstream
-    'timestamp','Timestamp','cached_at','cachedAt',
-    // response time from upstream — we inject our own
-    'response_time_ms','responseTimeMs','response_time','responseTime'
+    'rate_limit','rateLimit','rate_limit_info','timestamp','Timestamp'
 ]);
 
 const REMOVE_STRINGS = [
@@ -350,6 +364,7 @@ function cleanResponse(data) {
         }
     }
     clean(obj);
+    obj.developer = '@flirts_x';
     return obj;
 }
 
@@ -1080,13 +1095,10 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
             if (perDay > 0 && dailyCount >= perDay)
                 return res.status(429).json({
-                    status   : false,
-                    error    : 'Daily quota exceeded',
-                    used     : dailyCount,
-                    limit    : perDay,
-                    remaining: 0,
-                    message  : `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`,
-                    developer: '@flirts_x'
+                    error  : 'Daily quota exceeded',
+                    used   : dailyCount,
+                    limit  : perDay,
+                    message: `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`
                 });
 
             if (perMin > 0) {
@@ -1134,12 +1146,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const targetUrl  = proxyFn(params);
             const upstream   = await axios.get(targetUrl, { timeout: 30000 });
             const responseMs = Date.now() - reqStart;
-            const raw  = cleanResponse(upstream.data);
-            // spread data first, then append our fields at the end
-            const data = Object.assign({}, raw, {
-                response_time_ms: responseMs,
-                developer       : '@flirts_x'
-            });
+            let data         = cleanResponse(upstream.data);
 
             if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
 
@@ -1218,26 +1225,20 @@ setInterval(autoExpireApis, 60 * 1000);
 // ─── SERVER + WEBSOCKET ───────────────────────────────────────────────────────
 const PORT   = process.env.PORT || 5000;
 const server = http.createServer(app);
-
-let wss = null;
-try {
-    wss = new WebSocketServer({ server, path: '/ws/hits' });
-    setInterval(() => {
-        wss.clients.forEach(client => {
-            if (client.readyState === 1) client.ping();
-        });
-    }, 25000);
-} catch(e) {
-    console.log('WebSocket not available (Vercel serverless)');
-}
+const wss    = new WebSocketServer({ server, path: '/ws/hits' });
 
 function wsBroadcast(payload) {
-    if (!wss) return;
     const msg = JSON.stringify(payload);
     wss.clients.forEach(client => {
         if (client.readyState === 1) client.send(msg);
     });
 }
+
+setInterval(() => {
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) client.ping();
+    });
+}, 25000);
 
 server.listen(PORT, () => console.log(`\n🚀 OSINT API HUB (MongoDB) — PORT ${PORT}`));
 module.exports = app;
