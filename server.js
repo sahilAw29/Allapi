@@ -325,8 +325,12 @@ const REMOVE_FIELDS = new Set([
     'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
     'support','@raxusss','raxusss','Raxusss','Support','help','Help',
     'by','By','BY','ftgamer',
-    'rate_limit','rateLimit','rate_limit_info',
-    'timestamp','Timestamp'
+    // rate limit fields — remove from upstream
+    'rate_limit','rateLimit','rate_limit_info','per_day','per_minute',
+    // timestamp fields — remove from upstream
+    'timestamp','Timestamp','cached_at','cachedAt',
+    // response time from upstream — we inject our own
+    'response_time_ms','responseTimeMs','response_time','responseTime'
 ]);
 
 const REMOVE_STRINGS = [
@@ -346,7 +350,6 @@ function cleanResponse(data) {
         }
     }
     clean(obj);
-    obj.developer = '@flirts_x';
     return obj;
 }
 
@@ -1132,11 +1135,11 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const upstream   = await axios.get(targetUrl, { timeout: 30000 });
             const responseMs = Date.now() - reqStart;
             const raw  = cleanResponse(upstream.data);
-            let data   = {
-                ...raw,
+            // spread data first, then append our fields at the end
+            const data = Object.assign({}, raw, {
                 response_time_ms: responseMs,
-                developer        : '@flirts_x'
-            };
+                developer       : '@flirts_x'
+            });
 
             if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
 
