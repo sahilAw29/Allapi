@@ -952,7 +952,7 @@ function collectOverrides() {
 
 function openEditModal(btn) {
   var d = btn.dataset;
-  document.getElementById('edit_key_id').value = d._id;
+  document.getElementById('edit_key_id').value = d.id;
   document.getElementById('edit_name').value = decodeURIComponent(d.name || '');
   document.getElementById('edit_api_enabled').value = d.enabled !== undefined ? d.enabled : 1;
   document.getElementById('edit_rate_limit_per_day').value = d.rlDay || 100;
