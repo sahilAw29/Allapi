@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express   = require('express');
 const session   = require('express-session');
+const MongoStore = require('connect-mongo');
 const bcrypt    = require('bcrypt');
 const axios     = require('axios');
 const rateLimit = require('express-rate-limit');
@@ -159,7 +160,7 @@ async function seedData() {
             ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
             ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
             ['veh-to-num',   '🚗 Vehicle to Number',   '/api/veh-to-num',   '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
-            ['vehicle-info', '🚘 Vehicle Info',         '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
+            ['vehicle-info', '🚘 Vehicle Info',        '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
             ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
             ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
             ['snap',         '👻 Snapchat Info',       '/api/snap',         '{"username":""}','{"username":"john_doe"}',   'Snapchat profile lookup'],
@@ -214,11 +215,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 app.use(cors());
+
+// ─── VERCEL / PROXY FIX ───────────────────────────────────────────────────────
+app.set('trust proxy', 1);
+
 app.use(session({
-    secret           : 'osint_secret_2024',
+    secret           : process.env.SESSION_SECRET || 'osint_secret_2024',
     resave           : false,
     saveUninitialized: false,
-    cookie           : { maxAge: 24 * 60 * 60 * 1000 }
+    store            : MongoStore.create({
+        mongoUrl   : MONGO_URI,
+        ttl        : 24 * 60 * 60,
+        autoRemove : 'native'
+    }),
+    cookie: {
+        maxAge  : 24 * 60 * 60 * 1000,
+        secure  : process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
 }));
 
 const globalLimiter = rateLimit({
@@ -316,8 +330,7 @@ const REMOVE_FIELDS = new Set([
     'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
     'support','@raxusss','raxusss','Raxusss','Support','help','Help',
     'by','By','BY','ftgamer',
-    'rate_limit','rateLimit','rate_limit_info',
-    'timestamp','Timestamp','time','Time'
+    'rate_limit','rateLimit','rate_limit_info','timestamp','Timestamp'
 ]);
 
 const REMOVE_STRINGS = [
@@ -377,7 +390,6 @@ app.get('/endpoints', async (req, res) => {
             owner: OWNER, channel: CHANNEL, user: req.session.user || null
         });
     } catch (err) {
-        console.error('Endpoints error:', err);
         res.status(500).send('Database error: ' + err.message);
     }
 });
@@ -399,7 +411,6 @@ app.get('/docs', async (req, res) => {
         });
         res.render('docs', { apis: formatted, baseUrl: base, owner: OWNER, channel: CHANNEL, user: req.session.user || null });
     } catch (err) {
-        console.error('Docs error:', err);
         res.status(500).send('Database error: ' + err.message);
     }
 });
@@ -553,7 +564,6 @@ app.get('/nazriya/analytics', requireAuth, async (req, res) => {
         const totalEndpoints = await AvailableApi.countDocuments();
         res.render('analytics', { totalEndpoints, user: req.session.user, owner: OWNER, channel: CHANNEL });
     } catch (err) {
-        console.error('Analytics page error:', err);
         res.status(500).send('Database error: ' + err.message);
     }
 });
@@ -641,7 +651,6 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
             hourlyChart, topEndpoints, statusDist, recentRequests
         });
     } catch (err) {
-        console.error('Analytics data error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -679,7 +688,6 @@ app.get('/nazriya/login-history', requireAuth, async (req, res) => {
             channel     : CHANNEL
         });
     } catch (err) {
-        console.error('Login history error:', err);
         res.status(500).send('Database error: ' + err.message);
     }
 });
@@ -815,7 +823,7 @@ app.post('/nazriya/edit-key', requireAuth, async (req, res) => {
             maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
         }
 
-        const enabled  = !['false','0',0].includes(api_enabled);
+        const enabled  = !['false','0',0,'0'].includes(String(api_enabled));
         const noteText = (key_note || '').trim();
 
         let overridesJson = existing.api_overrides || '{}';
@@ -917,7 +925,6 @@ app.post('/nazriya/duplicate-key', requireAuth, async (req, res) => {
         });
         res.json({ success: true, key: newKey });
     } catch (err) {
-        console.error('Duplicate key error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -1060,7 +1067,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             });
         }
 
-        // ─── RATE LIMIT — internal only, never sent to response ──────────────
+        // ─── RATE LIMIT — enforce internally, never leak to response ──────────
         if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
             const perDay = parseInt(keyData.rate_limit_per_day)    || 100;
             const perMin = parseInt(keyData.rate_limit_per_minute) || 0;
@@ -1074,19 +1081,19 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
             if (perDay > 0 && dailyCount >= perDay)
                 return res.status(429).json({
-                    success: false,
-                    error  : `Daily limit exceeded (${perDay}/day)`,
-                    contact: OWNER
+                    error  : 'Daily quota exceeded',
+                    used   : dailyCount,
+                    limit  : perDay,
+                    message: `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`
                 });
 
             if (perMin > 0) {
-                const minDoc  = await RateLimitTracking.findOne({ api_key: userKey, minute_timestamp: nowTs });
+                const minDoc   = await RateLimitTracking.findOne({ api_key: userKey, minute_timestamp: nowTs });
                 const minCount = minDoc ? minDoc.requests : 0;
                 if (minCount >= perMin)
                     return res.status(429).json({
-                        success: false,
-                        error  : `Per-minute limit exceeded (${perMin}/min)`,
-                        contact: OWNER
+                        error  : 'Rate limit exceeded',
+                        message: `Slow down! Max ${perMin} requests/minute. Contact @flirts_x for higher limits`
                     });
             }
 
@@ -1127,7 +1134,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             const responseMs = Date.now() - reqStart;
             let data         = cleanResponse(upstream.data);
 
-            // key_note inject if enabled
             if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
 
             Analytics.create({
@@ -1150,7 +1156,12 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 response_time: Date.now() - reqStart,
                 date         : today
             }).catch(() => {});
-            res.status(500).json({ error: 'Upstream API failed', details: err.message });
+            res.status(503).json({
+                status   : false,
+                error    : 'API Not Responding',
+                message  : '⚠️ This API is currently not responding. Please try again later.',
+                developer: '@flirts_x'
+            });
         }
 
     } catch (err) {
@@ -1171,7 +1182,7 @@ app.post('/nazriya/git-update', requireAuth, (req, res) => {
             return res.json({ output: '✅ Already up to date. No restart needed.\n' + output, restarting: false });
         res.json({ output: '✅ Pull success:\n' + output, restarting: true });
         setTimeout(() => {
-            exec('pm2 restart allapi', (e2, o2, s2) => {
+            exec('pm2 restart allapi', (e2) => {
                 if (e2) exec('node ' + __dirname + '/server.js', () => {});
             });
         }, 1000);
