@@ -15,7 +15,7 @@ const app = express();
 
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTxher';
-const NEW_BASE = 'http://3.26.235.80:3000';
+const NEW_BASE = 'http://16.176.162.144:3000';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
