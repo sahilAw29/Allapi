@@ -15,7 +15,7 @@ const app = express();
 
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTxher';
-const NEW_BASE = 'http://54.252.234.175:3000';
+const NEW_BASE = 'https://flirt.web.id/sahil';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
     ayaanmods: 'ayaan-key'
