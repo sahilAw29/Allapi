@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — OSINT Hub</title>
+  <title>Admin Dashboard — AllAPI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -302,9 +302,132 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted2); }
     .hidden { display: none !important; }
+
+    /* ═══ ENHANCED VISUAL UPGRADES ═══ */
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    [data-theme="light"] body::before { background-image: linear-gradient(rgba(34,211,238,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.07) 1px, transparent 1px); }
+
+    /* Ambient glow orbs */
+    .ambient-orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(100px); opacity: 0.07; }
+    .ao1 { width: 500px; height: 500px; background: #22d3ee; top: -150px; left: -100px; }
+    .ao2 { width: 400px; height: 400px; background: #818cf8; bottom: -100px; right: 0; }
+
+    /* Enhanced nav */
+    .nav { background: rgba(5,8,16,0.95) !important; border-bottom: 1px solid rgba(34,211,238,0.1) !important; }
+    .nav::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(34,211,238,0.3), transparent); }
+    .nav-logo-icon { animation: iconGlow 3s ease-in-out infinite; }
+    @keyframes iconGlow { 0%,100%{box-shadow:0 0 20px rgba(34,211,238,0.3)} 50%{box-shadow:0 0 30px rgba(34,211,238,0.5), 0 0 60px rgba(34,211,238,0.15)} }
+
+    /* Enhanced stat cards */
+    .stat-card {
+      background: rgba(13,20,38,0.8) !important;
+      backdrop-filter: blur(24px) !important;
+      border: 1px solid rgba(255,255,255,0.06) !important;
+      border-radius: 18px !important;
+      padding: 24px !important;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .stat-card:hover { transform: translateY(-3px) !important; }
+    .stat-card.c-cyan  { border-top: 1px solid rgba(34,211,238,0.3) !important; }
+    .stat-card.c-cyan:hover  { box-shadow: 0 20px 50px rgba(34,211,238,0.12) !important; }
+    .stat-card.c-indigo { border-top: 1px solid rgba(129,140,248,0.3) !important; }
+    .stat-card.c-indigo:hover { box-shadow: 0 20px 50px rgba(129,140,248,0.12) !important; }
+    .stat-card.c-emerald { border-top: 1px solid rgba(52,211,153,0.3) !important; }
+    .stat-card.c-emerald:hover { box-shadow: 0 20px 50px rgba(52,211,153,0.12) !important; }
+    .stat-card.c-amber { border-top: 1px solid rgba(251,191,36,0.3) !important; }
+    .stat-card.c-amber:hover { box-shadow: 0 20px 50px rgba(251,191,36,0.12) !important; }
+
+    .stat-value { font-size: 34px !important; letter-spacing: -1px !important; }
+    .stat-icon { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.08) !important; width: 38px !important; height: 38px !important; border-radius: 10px !important; }
+    .stat-card.c-cyan .stat-value { color: var(--cyan) !important; }
+    .stat-card.c-indigo .stat-value { color: var(--indigo) !important; }
+    .stat-card.c-emerald .stat-value { color: var(--emerald) !important; }
+    .stat-card.c-amber .stat-value { color: var(--amber) !important; }
+    .stat-card.c-cyan .stat-icon { background: rgba(34,211,238,0.1) !important; color: var(--cyan) !important; border-color: rgba(34,211,238,0.2) !important; }
+    .stat-card.c-indigo .stat-icon { background: rgba(129,140,248,0.1) !important; color: var(--indigo) !important; border-color: rgba(129,140,248,0.2) !important; }
+    .stat-card.c-emerald .stat-icon { background: rgba(52,211,153,0.1) !important; color: var(--emerald) !important; border-color: rgba(52,211,153,0.2) !important; }
+    .stat-card.c-amber .stat-icon { background: rgba(251,191,36,0.1) !important; color: var(--amber) !important; border-color: rgba(251,191,36,0.2) !important; }
+
+    /* Enhanced stat-delta / sub badges */
+    .stat-delta-up { display: inline-flex; align-items: center; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--emerald); background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); padding: 1px 7px; border-radius: 20px; }
+    .stat-delta-dn { display: inline-flex; align-items: center; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--red); background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); padding: 1px 7px; border-radius: 20px; }
+
+    /* Enhanced page header */
+    .page-header { background: rgba(13,20,38,0.5); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px !important; }
+    .page-title { font-size: 20px !important; letter-spacing: -0.5px !important; }
+    .page-title-wrap { display: flex; align-items: center; gap: 12px; }
+    .page-title-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(34,211,238,0.2), rgba(129,140,248,0.2)); border: 1px solid rgba(34,211,238,0.25); display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 14px; }
+    .time-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 3px 10px; border-radius: 6px; margin-top: 4px; display: inline-block; }
+
+    /* Enhanced chart cards */
+    .chart-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; padding: 24px !important; }
+    .chart-title { font-size: 14px !important; }
+
+    /* Enhanced heatmap */
+    .heatmap-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
+
+    /* Enhanced health/activity */
+    .hs-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
+
+    /* Enhanced table card */
+    .table-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
+    .table-title { font-size: 15px !important; font-weight: 800 !important; letter-spacing: -0.3px !important; }
+
+    /* Enhanced API management */
+    .api-mgmt-wrap { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 20px !important; }
+
+    /* Upgraded API cards */
+    .api-card-item {
+      background: rgba(9,14,28,0.8) !important;
+      transition: background 0.2s, transform 0.2s !important;
+      border-radius: 0 !important;
+    }
+    .api-card-item:hover { background: rgba(13,20,38,0.95) !important; }
+    .api-card-item.is-on:hover { background: rgba(34,211,238,0.03) !important; }
+    .api-grid { gap: 1px !important; border-radius: 0 0 20px 20px !important; overflow: hidden !important; }
+
+    /* Maintenance banner upgrade */
+    .banner {
+      background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(248,113,113,0.04)) !important;
+      border: 1px solid rgba(251,191,36,0.2) !important;
+      border-radius: 14px !important;
+    }
+
+    /* Main content z-index */
+    .main { position: relative; z-index: 1; }
+    .nav { z-index: 50; position: fixed; }
+
+    /* Scrollbar upgrade */
+    ::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.15) !important; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.3) !important; }
   </style>
 </head>
 <body>
+
+<div class="ambient-orb ao1"></div>
+<div class="ambient-orb ao2"></div>
 
 <nav class="nav scanline">
   <div class="nav-logo">
@@ -343,52 +466,78 @@
 <main class="main">
   <div class="page-header">
     <div>
-      <div class="page-title">Command Center</div>
-      <div class="page-sub">// api key management & system overview</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="page-title-icon"><i class="fa-solid fa-gauge-high"></i></div>
+        <div>
+          <div class="page-title">Command Center</div>
+          <div class="page-sub">// <%= owner %> &nbsp;·&nbsp; AllAPI Admin Dashboard</div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <button onclick="triggerGitUpdate()" class="git-update-btn" id="gitUpdateBtn"><i class="fa-brands fa-github"></i> Update</button>
-      <button class="btn-primary" onclick="openModal('generateModal')"><i class="fa-solid fa-plus"></i> New Key</button>
+      <button class="btn-primary" onclick="openModal('generateModal')"><i class="fa-solid fa-key"></i> New Key</button>
     </div>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card glass grad-border glow-indigo c-indigo">
-      <div class="stat-label">Total Keys</div>
-      <div class="stat-value" style="color:var(--indigo)"><%= keys.length %></div>
-      <div class="stat-sub">Registered</div>
-      <div class="stat-icon" style="background:rgba(129,140,248,0.1);color:var(--indigo)"><i class="fa-solid fa-key"></i></div>
+    <div class="stat-card c-indigo">
+      <div class="stat-label">API Keys</div>
+      <div class="stat-value"><%= keys.length %></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="stat-sub"><%= active %> active</div>
+        <% if(active > 0) { %><span class="stat-delta-up"><i class="fa-solid fa-arrow-trend-up" style="font-size:8px"></i> <%= Math.round((active/keys.length)*100) || 0 %>%</span><% } %>
+      </div>
+      <div class="stat-icon"><i class="fa-solid fa-key"></i></div>
     </div>
-    <div class="stat-card glass grad-border glow-emerald c-emerald">
-      <div class="stat-label">Active</div>
-      <div class="stat-value" style="color:var(--emerald)"><%= active %></div>
-      <div class="stat-sub">Operational</div>
-      <div class="stat-icon" style="background:rgba(52,211,153,0.1);color:var(--emerald)"><i class="fa-solid fa-shield-check"></i></div>
+    <div class="stat-card c-emerald">
+      <div class="stat-label">Live Keys</div>
+      <div class="stat-value"><%= active %></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="stat-sub">Operational now</div>
+        <span class="stat-delta-up"><i class="fa-solid fa-circle" style="font-size:5px"></i> Online</span>
+      </div>
+      <div class="stat-icon"><i class="fa-solid fa-shield-check"></i></div>
     </div>
-    <div class="stat-card glass grad-border glow-cyan c-cyan">
-      <div class="stat-label">Total Hits</div>
-      <div class="stat-value" style="color:var(--cyan)"><%= totalHits.toLocaleString() %></div>
-      <div class="stat-sub">All time requests</div>
-      <div class="stat-icon" style="background:rgba(34,211,238,0.1);color:var(--cyan)"><i class="fa-solid fa-bolt"></i></div>
+    <div class="stat-card c-cyan">
+      <div class="stat-label">Total Requests</div>
+      <div class="stat-value"><%= totalHits.toLocaleString() %></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="stat-sub">All time</div>
+        <span class="stat-delta-up"><i class="fa-solid fa-bolt" style="font-size:7px"></i> Live</span>
+      </div>
+      <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
     </div>
-    <div class="stat-card glass grad-border glow-amber c-amber">
+    <div class="stat-card c-amber">
       <div class="stat-label">Endpoints</div>
-      <div class="stat-value" style="color:var(--amber)"><%= apis.length %></div>
-      <div class="stat-sub">Active modules</div>
-      <div class="stat-icon" style="background:rgba(251,191,36,0.1);color:var(--amber)"><i class="fa-solid fa-cubes"></i></div>
+      <div class="stat-value"><%= apis.length %></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="stat-sub"><%= apis.filter(function(a){return a.is_active;}).length %> online</div>
+        <% var offCount = apis.filter(function(a){return !a.is_active;}).length; %>
+        <% if(offCount > 0) { %><span class="stat-delta-dn"><i class="fa-solid fa-ban" style="font-size:7px"></i> <%= offCount %> off</span><% } %>
+      </div>
+      <div class="stat-icon"><i class="fa-solid fa-cubes"></i></div>
     </div>
   </div>
 
   <div class="charts-grid">
-    <div class="chart-card glass">
+    <div class="chart-card">
       <div class="chart-head">
-        <div><div class="chart-title">Request Volume</div><div class="chart-sub">Last 7 days</div></div>
-        <a href="/nazriya/analytics" class="chart-link">Full view <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+        <div>
+          <div class="chart-title"><i class="fa-solid fa-chart-line" style="color:var(--cyan);margin-right:7px;font-size:12px"></i>Request Volume</div>
+          <div class="chart-sub">Daily traffic · last 7 days</div>
+        </div>
+        <a href="/nazriya/analytics" class="chart-link">Analytics <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
       </div>
       <div style="height:160px"><canvas id="dailyChart"></canvas></div>
     </div>
-    <div class="chart-card glass">
-      <div class="chart-head"><div><div class="chart-title">Top Endpoints</div><div class="chart-sub">By usage</div></div></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><i class="fa-solid fa-ranking-star" style="color:var(--violet);margin-right:7px;font-size:12px"></i>Top Endpoints</div>
+          <div class="chart-sub">By hit volume</div>
+        </div>
+      </div>
       <div style="height:160px"><canvas id="endpointsChart"></canvas></div>
     </div>
   </div>
