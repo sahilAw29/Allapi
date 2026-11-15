@@ -195,6 +195,34 @@ async function seedData() {
         console.log('✅ APIs seeded');
     }
 
+    // ─── AUTO-INSERT: add any missing APIs to existing DB ────────────────────
+    const NEW_APIS = [
+        ['adhar',      '🪪 Aadhaar Lookup',  '/api/adhar',      '{"adhar":""}',         '{"adhar":"123456789012"}',       'Aadhaar card information'],
+        ['upi',        '💳 UPI Info',         '/api/upi',        '{"upi":""}',           '{"upi":"name@okicici"}',         'UPI ID account details'],
+        ['fastag',     '🛣️ FASTag Info',      '/api/fastag',     '{"vehicle":""}',       '{"vehicle":"DL01AB1234"}',       'FASTag vehicle wallet info'],
+        ['challan',    '🚦 Challan Check',    '/api/challan',    '{"vehicle":""}',       '{"vehicle":"DL01AB1234"}',       'Vehicle challan/fine details'],
+        ['adv',        '📡 Advance Number',   '/api/adv',        '{"number":""}',        '{"number":"9876543210"}',        'Advanced number lookup'],
+        ['pan-gst',    '🔗 PAN to GST',       '/api/pan-gst',    '{"pan":""}',           '{"pan":"ABCDE1234F"}',           'Get GST linked to PAN'],
+        ['gstin',      '🏢 GSTIN Info',       '/api/gstin',      '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'GSTIN taxpayer details'],
+        ['name2gstin', '🔎 Name to GSTIN',    '/api/name2gstin', '{"name":""}',          '{"name":"RAHUL"}',               'Search GSTIN by business name'],
+        ['nametoinfo', '👤 Name to Info',     '/api/nametoinfo', '{"name":""}',          '{"name":"RAHUL"}',               'Person info by name search'],
+        ['gstreturns', '📊 GST Returns',      '/api/gstreturns', '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'GST return filing history'],
+        ['gstin2pan',  '🔄 GSTIN to PAN',     '/api/gstin2pan',  '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'Get PAN from GSTIN'],
+        ['namesearch', '🔍 Name Search',      '/api/namesearch', '{"q":"","from":""}',   '{"q":"Ramesh","from":"Delhi"}',  'Search person by name and location'],
+    ];
+    for (const a of NEW_APIS) {
+        await AvailableApi.findOneAndUpdate(
+            { name: a[0] },
+            { $setOnInsert: {
+                name: a[0], display_name: a[1], endpoint: a[2],
+                required_params: a[3], example_params: a[4], description: a[5],
+                is_active: true, custom_message: 'API is currently turned off.'
+            }},
+            { upsert: true }
+        );
+    }
+    console.log('✅ New APIs upserted');
+
     // ─── AUTO-FIX: rename old wrong api names in DB ───────────────────────────
     const fixes = [
         { old: 'veh-to-num',  name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
