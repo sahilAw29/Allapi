@@ -1,1456 +1,1296 @@
-
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard — AllAPI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #050810; --surface: #090e1c; --panel: #0d1426; --border: rgba(255,255,255,0.06);
-      --text: #e2e8f0; --muted: #475569; --muted2: #334155;
-      --cyan: #22d3ee; --indigo: #818cf8; --emerald: #34d399; --amber: #fbbf24; --red: #f87171;
-    }
-    [data-theme="light"] {
-      --bg: #f1f5f9; --surface: #ffffff; --panel: #f8fafc; --border: rgba(0,0,0,0.09);
-      --text: #0f172a; --muted: #64748b; --muted2: #94a3b8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); min-height: 100vh; overflow-x: hidden; transition: background 0.25s, color 0.25s; }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-    .glass { background: rgba(13,20,38,0.7); backdrop-filter: blur(20px); border: 1px solid var(--border); }
-    [data-theme="light"] .glass { background: rgba(255,255,255,0.85); box-shadow: 0 1px 8px rgba(0,0,0,0.07); }
-    .glow-cyan { box-shadow: 0 0 40px rgba(34,211,238,0.07), inset 0 1px 0 rgba(34,211,238,0.1); }
-    .glow-indigo { box-shadow: 0 0 40px rgba(129,140,248,0.07), inset 0 1px 0 rgba(129,140,248,0.1); }
-    .glow-emerald{ box-shadow: 0 0 40px rgba(52,211,153,0.07), inset 0 1px 0 rgba(52,211,153,0.1); }
-    .glow-amber { box-shadow: 0 0 40px rgba(251,191,36,0.07), inset 0 1px 0 rgba(251,191,36,0.1); }
-    .grad-border { position: relative; }
-    .grad-border::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg,rgba(34,211,238,0.3) 0%,rgba(129,140,248,0.15) 50%,rgba(34,211,238,0.05) 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
-    .scanline { position: relative; overflow: hidden; }
-    .scanline::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(34,211,238,0.012) 2px,rgba(34,211,238,0.012) 4px); pointer-events: none; }
-    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 56px; background: rgba(5,8,16,0.92); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; transition: background 0.25s; }
-    [data-theme="light"] .nav { background: rgba(248,250,252,0.95); }
-    .nav-logo { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-    .nav-logo-icon { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #22d3ee, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.3); }
-    .nav-logo-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; color: var(--text); }
-    .nav-logo-text span { color: var(--cyan); }
-    .nav-links { display: flex; align-items: center; gap: 2px; margin-right: 20px; }
-    .nav-link { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all 0.15s; }
-    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-    .nav-link.active { color: var(--cyan); background: rgba(34,211,238,0.08); }
-    .nav-link i { font-size: 11px; }
-    .nav-actions { display: flex; align-items: center; gap: 10px; }
-    .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
-    .theme-btn:hover { color: var(--amber); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
-    .nav-user { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
-    .nav-avatar { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, #818cf8, #22d3ee); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
-    .nav-username { font-size: 12px; font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; }
-    .nav-logout { color: var(--muted); font-size: 12px; text-decoration: none; margin-left: 8px; }
-    .nav-logout:hover { color: var(--red); }
-    .git-update-btn { display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;border:1px solid #30363d;background:rgba(255,255,255,0.04);color:#8b949e;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'JetBrains Mono',monospace; }
-    .git-update-btn:hover { border-color:#22d3ee;color:#22d3ee;background:rgba(34,211,238,0.08); }
-    .git-update-btn.loading { opacity:0.6;pointer-events:none; }
-    #ws-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; height: 32px; background: rgba(5,8,16,0.97); border-top: 1px solid rgba(34,211,238,0.12); display: flex; align-items: center; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-    #ws-bar-label { flex-shrink: 0; padding: 0 12px; color: var(--cyan); font-weight: 700; letter-spacing: 0.08em; border-right: 1px solid rgba(34,211,238,0.12); display: flex; align-items: center; gap: 6px; }
-    .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); animation: wsDot 1.5s ease-in-out infinite; }
-    .ws-dot.off { background: var(--muted2); box-shadow: none; animation: none; }
-    @keyframes wsDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    #ws-ticker { flex: 1; display: flex; align-items: center; overflow: hidden; white-space: nowrap; }
-    .ws-event { display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; color: #64748b; border-right: 1px solid rgba(255,255,255,0.04); animation: wsSlide 0.35s cubic-bezier(0.16,1,0.3,1) both; flex-shrink: 0; }
-    .ws-event .ws-ep { color: var(--indigo); }
-    .ws-event .ws-key, .ws-event .ws-time { color: var(--muted2); }
-    @keyframes wsSlide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-    #ws-count { padding: 0 12px; color: var(--emerald); font-weight: 700; border-left: 1px solid rgba(34,211,238,0.12); flex-shrink: 0; }
-    .main { padding: 72px 28px 48px; max-width: 1440px; margin: 0 auto; }
-    .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
-    .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
-    .page-sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-    .btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #22d3ee, #818cf8); color: #fff; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(34,211,238,0.25); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(34,211,238,0.35); }
-    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-    @media(max-width:900px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
-    .stat-card { border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
-    .stat-card::after { content: ''; position: absolute; top: -30px; right: -30px; width: 80px; height: 80px; border-radius: 50%; opacity: 0.06; }
-    .stat-card.c-cyan::after { background: var(--cyan); }
-    .stat-card.c-indigo::after { background: var(--indigo); }
-    .stat-card.c-emerald::after{ background: var(--emerald); }
-    .stat-card.c-amber::after { background: var(--amber); }
-    .stat-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-    .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
-    .stat-sub { font-size: 11px; color: var(--muted2); }
-    .stat-icon { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
-    @media(max-width:900px){ .charts-grid{ grid-template-columns:1fr; } }
-    .chart-card { border-radius: 16px; padding: 22px; }
-    .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .chart-title { font-size: 13px; font-weight: 700; }
-    .chart-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .chart-link { font-size: 11px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 4px; opacity: 0.8; }
-    .heatmap-card { border-radius: 16px; padding: 22px; margin-bottom: 20px; }
-    .heatmap-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .heatmap-title { font-size: 13px; font-weight: 700; }
-    .heatmap-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    #heatmap-grid { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; gap: 3px; overflow-x: auto; padding-bottom: 4px; }
-    .hm-cell { width: 12px; height: 12px; border-radius: 2px; background: rgba(34,211,238,0.06); transition: transform 0.12s; }
-    .hm-cell:hover { transform: scale(1.4); z-index: 1; }
-    .hm-cell[data-level="1"] { background: rgba(34,211,238,0.18); }
-    .hm-cell[data-level="2"] { background: rgba(34,211,238,0.38); }
-    .hm-cell[data-level="3"] { background: rgba(34,211,238,0.62); }
-    .hm-cell[data-level="4"] { background: rgba(34,211,238,0.88); }
-    .hm-tooltip { display: none; position: fixed; z-index: 200; background: #0d1426; border: 1px solid rgba(34,211,238,0.2); border-radius: 7px; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; pointer-events: none; white-space: nowrap; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
-    .hm-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
-    .hm-legend-cell { width: 12px; height: 12px; border-radius: 2px; }
-    .hm-legend-cell[data-level="1"] { background: rgba(34,211,238,0.18); }
-    .hm-legend-cell[data-level="2"] { background: rgba(34,211,238,0.38); }
-    .hm-legend-cell[data-level="3"] { background: rgba(34,211,238,0.62); }
-    .hm-legend-cell[data-level="4"] { background: rgba(34,211,238,0.88); }
-    .health-activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-    @media(max-width:900px){ .health-activity-grid{ grid-template-columns:1fr; } }
-    .hs-card { border-radius: 16px; overflow: hidden; }
-    .hs-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .hs-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .hs-live { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: var(--emerald); text-transform: uppercase; }
-    .hs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 2s infinite; }
-    .hs-link { font-size: 11px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 4px; opacity: 0.85; }
-    .hs-body { padding: 18px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .hs-metric { display: flex; align-items: center; gap: 12px; }
-    .hs-metric-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-    .hs-metric-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; margin-bottom: 3px; }
-    .hs-metric-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
-    .activity-feed { padding: 6px 20px 14px; max-height: 210px; overflow-y: auto; }
-    .activity-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .activity-row:last-child { border-bottom: none; }
-    .activity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .activity-dot.ok { background: var(--emerald); box-shadow: 0 0 5px var(--emerald); }
-    .activity-dot.err { background: var(--red); box-shadow: 0 0 5px var(--red); }
-    .activity-ep { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--indigo); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .activity-code { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
-    .activity-code.ok { color: var(--emerald); background: rgba(52,211,153,0.1); }
-    .activity-code.err { color: var(--red); background: rgba(248,113,113,0.1); }
-    .activity-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); white-space: nowrap; }
-    .activity-empty { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 40px 0; color: var(--muted2); font-size: 12px; }
-    .banner { border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
-    .banner-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-    .banner input { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--text); outline: none; font-family: 'JetBrains Mono', monospace; }
-    .banner-btn { padding: 8px 16px; border-radius: 8px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); color: var(--amber); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .table-card { border-radius: 16px; overflow: hidden; }
-    .table-head-bar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .table-title-group { display: flex; align-items: center; gap: 10px; }
-    .table-title { font-size: 14px; font-weight: 700; }
-    .table-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
-    .search-wrap { position: relative; }
-    .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted2); font-size: 11px; }
-    .search-wrap input { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px 7px 30px; font-size: 12px; color: var(--text); outline: none; width: 220px; }
-    table { width: 100%; border-collapse: collapse; }
-    thead tr { border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
-    thead th { padding: 11px 16px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); }
-    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.025); }
-    tbody tr:hover { background: rgba(255,255,255,0.018); }
-    td { padding: 13px 16px; font-size: 12px; vertical-align: middle; }
-    .key-badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cyan); background: rgba(34,211,238,0.06); border: 1px solid rgba(34,211,238,0.15); padding: 4px 10px; border-radius: 6px; }
-    .usage-pill { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; margin-top: 3px; }
-    .usage-pill.unlimited { color: var(--emerald); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
-    .usage-pill.onetime { color: var(--indigo); background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.2); }
-    .usage-pill.ratelimited{ color: var(--cyan); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
-    .hits-bar-wrap { margin-top: 5px; }
-    .hits-bar-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; width: 100px; }
-    .hits-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-    .hits-bar-fill.lvl-low { background: var(--cyan); }
-    .hits-bar-fill.lvl-mid { background: var(--amber); }
-    .hits-bar-fill.lvl-high { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
-    .hits-bar-sub { font-size: 9px; color: var(--muted2); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
-    .expiry-warn { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: var(--amber); background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); padding: 2px 6px; border-radius: 4px; margin-left: 6px; animation: expPulse 2s ease-in-out infinite; }
-    @keyframes expPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    .badge-active { background: rgba(52,211,153,0.08); color: var(--emerald); border: 1px solid rgba(52,211,153,0.2); }
-    .badge-disabled{ background: rgba(248,113,113,0.08); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
-    .badge-expired { background: rgba(251,191,36,0.08); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
-    .dot { width: 5px; height: 5px; border-radius: 50%; }
-    .dot-active { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 2s infinite; }
-    .dot-disabled{ background: var(--red); }
-    .dot-expired { background: var(--amber); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .ep-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--indigo); background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.15); padding: 3px 9px; border-radius: 5px; }
-    .ep-badge-warn { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--amber); background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); padding: 2px 7px; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; gap: 3px; }
-    .note-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--amber); background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); padding: 2px 7px; border-radius: 4px; margin-top: 4px; }
-    .action-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 11px; }
-    .action-btn:hover.edit { background: rgba(129,140,248,0.12); border-color: rgba(129,140,248,0.3); color: var(--indigo); }
-    .action-btn:hover.delete { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
-    .action-btn:hover.dupe { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.3); color: var(--cyan); }
-    .owner-name { font-weight: 600; font-size: 13px; }
-    .owner-handle { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); margin-top: 2px; }
-    .hits-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; }
-    .expiry-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; }
-    .expiry-time { font-size: 10px; color: var(--muted2); margin-top: 1px; }
-    .expiry-expired { color: var(--red); text-decoration: line-through; }
-    .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
-    .modal-overlay.open { display: flex; }
-    .modal { background: #0a0f1e; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
-    [data-theme="light"] .modal { background: #fff; border-color: rgba(0,0,0,0.1); }
-    .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .modal-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .modal-title i { color: var(--cyan); }
-    .modal-close { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-    .modal-body { padding: 22px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-    .form-input, .form-select { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 9px 14px; font-size: 12px; color: var(--text); outline: none; appearance: none; }
-    .form-input:focus, .form-select:focus { border-color: rgba(34,211,238,0.4); }
-    .form-select option { background: #0d1426; }
-    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .form-section { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
-    .form-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); margin-bottom: 12px; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-    .toggle-row label:first-child { font-size: 11px; color: #64748b; font-weight: 500; }
-    input[type=checkbox] { accent-color: var(--cyan); width: 14px; height: 14px; cursor: pointer; }
-    .btn-modal { width: 100%; padding: 11px; border-radius: 11px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px; }
-    .btn-modal-primary { background: linear-gradient(135deg, #22d3ee, #818cf8); color: #fff; box-shadow: 0 4px 20px rgba(34,211,238,0.2); }
-    .btn-modal-edit { background: rgba(129,140,248,0.15); color: var(--indigo); border: 1px solid rgba(129,140,248,0.25); }
-    .seg-toggle { display: inline-flex; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
-    .seg-btn { padding: 4px 11px; border-radius: 6px; border: none; background: transparent; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; }
-    .seg-btn.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #fff; }
-    .usage-seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-    .usage-seg-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--muted); cursor: pointer; }
-    .usage-seg-btn i { font-size: 14px; }
-    .usage-seg-btn span { font-size: 10px; font-weight: 700; }
-    .usage-seg-btn.active[data-usage="unlimited"] { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4); color: var(--emerald); }
-    .usage-seg-btn.active[data-usage="ratelimited"] { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.4); color: var(--cyan); }
-    .usage-seg-btn.active[data-usage="onetime"] { background: rgba(129,140,248,0.1); border-color: rgba(129,140,248,0.4); color: var(--indigo); }
-    .usage-hint { font-size: 11px; color: var(--muted2); margin-bottom: 12px; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border); }
-    .access-hint { background: rgba(52,211,153,0.05); border: 1px solid rgba(52,211,153,0.15); border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
-    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 200px; overflow-y: auto; padding: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; }
-    .check-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: 11px; color: #94a3b8; }
-    .check-item input { accent-color: var(--cyan); width: 14px; height: 14px; flex-shrink: 0; }
-    .check-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .override-list { max-height: 260px; overflow-y: auto; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
-    .override-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; }
-    .override-row.is-off { background: rgba(248,113,113,0.04); }
-    .override-emoji { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
-    .override-name { font-size: 11.5px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .override-state { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; width: 34px; text-align: right; flex-shrink: 0; }
-    .override-state.on { color: var(--emerald); }
-    .override-state.off { color: var(--red); }
-    .override-msg-wrap { margin-top: 6px; }
-    .override-msg { width: 100%; background: rgba(248,113,113,0.05); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px; padding: 7px 10px; font-size: 11px; color: var(--text); outline: none; }
-    .override-row-inner { display: flex; flex-direction: column; width: 100%; gap: 6px; }
-    .override-row-top { display: flex; align-items: center; gap: 10px; width: 100%; }
-    .override-toggle-mini { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; }
-    .override-toggle-mini input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .ot-track { width: 32px; height: 18px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 99px; position: relative; }
-    .override-toggle-mini input:checked + .ot-track { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.4); }
-    .ot-thumb { position: absolute; top: 1px; left: 1px; width: 14px; height: 14px; background: #f87171; border-radius: 50%; transition: all 0.2s; }
-    .override-toggle-mini input:checked + .ot-track .ot-thumb { left: 15px; background: var(--emerald); }
-    .override-count-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); background: var(--panel); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
-    .api-mgmt-wrap { margin-top: 20px; background: rgba(13,20,38,0.7); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
-    [data-theme="light"] .api-mgmt-wrap { background: rgba(255,255,255,0.85); }
-    .api-mgmt-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-    .api-mgmt-title-group { display: flex; align-items: center; gap: 14px; }
-    .api-mgmt-icon { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg,rgba(34,211,238,0.15),rgba(129,140,248,0.15)); border: 1px solid rgba(34,211,238,0.2); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--cyan); }
-    .api-mgmt-title { font-size: 15px; font-weight: 800; }
-    .api-mgmt-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
-    .api-mgmt-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .api-search-wrap { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; }
-    .api-search-wrap input { background: none; border: none; outline: none; color: var(--text); font-size: 12px; width: 160px; font-family: 'JetBrains Mono', monospace; }
-    .api-filter-tabs { display: flex; gap: 4px; }
-    .api-filter-btn { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
-    .api-filter-btn.active { color: var(--cyan); background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.15); }
-    .flt-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .flt-dot.on { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
-    .flt-dot.off { background: var(--red); }
-    .api-stats-strip { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.15); flex-wrap: wrap; }
-    .api-stat-pill { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
-    .pill-emerald { color: var(--emerald); background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
-    .pill-red { color: var(--red); background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.18); }
-    .pill-slate { color: #64748b; background: rgba(255,255,255,0.03); border-color: var(--border); }
-    .api-bulk-btn { display: flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; margin-left: auto; }
-    .bulk-on { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); color: var(--emerald); }
-    .bulk-off { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); color: var(--red); margin-left: 0; }
-    .api-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(195px,1fr)); gap: 1px; background: var(--border); }
-    .api-card-item { background: var(--panel); padding: 18px; display: flex; flex-direction: column; gap: 8px; }
-    .api-card-item.is-off { opacity: 0.6; }
-    .api-card-top { display: flex; align-items: flex-start; justify-content: space-between; }
-    .api-card-icon-wrap { width: 36px; height: 36px; border-radius: 10px; background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.1); display: flex; align-items: center; justify-content: center; font-size: 16px; }
-    .toggle-switch { position: relative; display: inline-flex; cursor: pointer; }
-    .toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .toggle-track { width: 38px; height: 21px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 99px; position: relative; }
-    .toggle-switch input:checked + .toggle-track { background: rgba(34,211,238,0.2); border-color: rgba(34,211,238,0.4); }
-    .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; background: #334155; border-radius: 50%; transition: all 0.25s; }
-    .toggle-switch input:checked + .toggle-track .toggle-thumb { left: 19px; background: var(--cyan); }
-    .api-card-name { font-size: 12px; font-weight: 700; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-    .api-card-path { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .api-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-    .api-status-badge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; padding: 3px 8px; border-radius: 99px; }
-    .badge-live { color: var(--emerald); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
-    .badge-dead { color: #475569; background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
-    .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-    .badge-live .badge-dot { box-shadow: 0 0 4px currentColor; animation: pulse-dot 2s infinite; }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .api-card-btns { display: flex; align-items: center; gap: 4px; }
-    .api-msg-btn { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted2); display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
-    .api-msg-btn:hover { color: var(--indigo); border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.06); }
-    .api-msg-btn.has-expiry { color: var(--amber); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
-    .api-expiry-badge { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; color: var(--amber); background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; width: fit-content; }
-    .api-card-item.updating { pointer-events: none; }
-    .api-empty { padding: 48px; text-align: center; color: var(--muted2); }
-    .toast { position: fixed; bottom: 44px; right: 24px; z-index: 200; background: #0d1426; border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: var(--emerald); box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateY(80px); opacity: 0; transition: all 0.3s; pointer-events: none; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted2); }
-    .hidden { display: none !important; }
-
-    /* ═══ ENHANCED VISUAL UPGRADES ═══ */
-
-    /* Animated background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(34,211,238,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,211,238,0.025) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
-    [data-theme="light"] body::before { background-image: linear-gradient(rgba(34,211,238,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.07) 1px, transparent 1px); }
-
-    /* Ambient glow orbs */
-    .ambient-orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(100px); opacity: 0.07; }
-    .ao1 { width: 500px; height: 500px; background: #22d3ee; top: -150px; left: -100px; }
-    .ao2 { width: 400px; height: 400px; background: #818cf8; bottom: -100px; right: 0; }
-
-    /* Enhanced nav */
-    .nav { background: rgba(5,8,16,0.95) !important; border-bottom: 1px solid rgba(34,211,238,0.1) !important; }
-    .nav::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(34,211,238,0.3), transparent); }
-    .nav-logo-icon { animation: iconGlow 3s ease-in-out infinite; }
-    @keyframes iconGlow { 0%,100%{box-shadow:0 0 20px rgba(34,211,238,0.3)} 50%{box-shadow:0 0 30px rgba(34,211,238,0.5), 0 0 60px rgba(34,211,238,0.15)} }
-
-    /* Enhanced stat cards */
-    .stat-card {
-      background: rgba(13,20,38,0.8) !important;
-      backdrop-filter: blur(24px) !important;
-      border: 1px solid rgba(255,255,255,0.06) !important;
-      border-radius: 18px !important;
-      padding: 24px !important;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s !important;
-      position: relative !important;
-      overflow: hidden !important;
-    }
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .stat-card:hover { transform: translateY(-3px) !important; }
-    .stat-card.c-cyan  { border-top: 1px solid rgba(34,211,238,0.3) !important; }
-    .stat-card.c-cyan:hover  { box-shadow: 0 20px 50px rgba(34,211,238,0.12) !important; }
-    .stat-card.c-indigo { border-top: 1px solid rgba(129,140,248,0.3) !important; }
-    .stat-card.c-indigo:hover { box-shadow: 0 20px 50px rgba(129,140,248,0.12) !important; }
-    .stat-card.c-emerald { border-top: 1px solid rgba(52,211,153,0.3) !important; }
-    .stat-card.c-emerald:hover { box-shadow: 0 20px 50px rgba(52,211,153,0.12) !important; }
-    .stat-card.c-amber { border-top: 1px solid rgba(251,191,36,0.3) !important; }
-    .stat-card.c-amber:hover { box-shadow: 0 20px 50px rgba(251,191,36,0.12) !important; }
-
-    .stat-value { font-size: 34px !important; letter-spacing: -1px !important; }
-    .stat-icon { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.08) !important; width: 38px !important; height: 38px !important; border-radius: 10px !important; }
-    .stat-card.c-cyan .stat-value { color: var(--cyan) !important; }
-    .stat-card.c-indigo .stat-value { color: var(--indigo) !important; }
-    .stat-card.c-emerald .stat-value { color: var(--emerald) !important; }
-    .stat-card.c-amber .stat-value { color: var(--amber) !important; }
-    .stat-card.c-cyan .stat-icon { background: rgba(34,211,238,0.1) !important; color: var(--cyan) !important; border-color: rgba(34,211,238,0.2) !important; }
-    .stat-card.c-indigo .stat-icon { background: rgba(129,140,248,0.1) !important; color: var(--indigo) !important; border-color: rgba(129,140,248,0.2) !important; }
-    .stat-card.c-emerald .stat-icon { background: rgba(52,211,153,0.1) !important; color: var(--emerald) !important; border-color: rgba(52,211,153,0.2) !important; }
-    .stat-card.c-amber .stat-icon { background: rgba(251,191,36,0.1) !important; color: var(--amber) !important; border-color: rgba(251,191,36,0.2) !important; }
-
-    /* Enhanced stat-delta / sub badges */
-    .stat-delta-up { display: inline-flex; align-items: center; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--emerald); background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); padding: 1px 7px; border-radius: 20px; }
-    .stat-delta-dn { display: inline-flex; align-items: center; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--red); background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); padding: 1px 7px; border-radius: 20px; }
-
-    /* Enhanced page header */
-    .page-header { background: rgba(13,20,38,0.5); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px !important; }
-    .page-title { font-size: 20px !important; letter-spacing: -0.5px !important; }
-    .page-title-wrap { display: flex; align-items: center; gap: 12px; }
-    .page-title-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(34,211,238,0.2), rgba(129,140,248,0.2)); border: 1px solid rgba(34,211,238,0.25); display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 14px; }
-    .time-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 3px 10px; border-radius: 6px; margin-top: 4px; display: inline-block; }
-
-    /* Enhanced chart cards */
-    .chart-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; padding: 24px !important; }
-    .chart-title { font-size: 14px !important; }
-
-    /* Enhanced heatmap */
-    .heatmap-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
-
-    /* Enhanced health/activity */
-    .hs-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
-
-    /* Enhanced table card */
-    .table-card { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 18px !important; }
-    .table-title { font-size: 15px !important; font-weight: 800 !important; letter-spacing: -0.3px !important; }
-
-    /* Enhanced API management */
-    .api-mgmt-wrap { background: rgba(13,20,38,0.7) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 20px !important; }
-
-    /* Upgraded API cards */
-    .api-card-item {
-      background: rgba(9,14,28,0.8) !important;
-      transition: background 0.2s, transform 0.2s !important;
-      border-radius: 0 !important;
-    }
-    .api-card-item:hover { background: rgba(13,20,38,0.95) !important; }
-    .api-card-item.is-on:hover { background: rgba(34,211,238,0.03) !important; }
-    .api-grid { gap: 1px !important; border-radius: 0 0 20px 20px !important; overflow: hidden !important; }
-
-    /* Maintenance banner upgrade */
-    .banner {
-      background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(248,113,113,0.04)) !important;
-      border: 1px solid rgba(251,191,36,0.2) !important;
-      border-radius: 14px !important;
-    }
-
-    /* Main content z-index */
-    .main { position: relative; z-index: 1; }
-    .nav { z-index: 50; position: fixed; }
-
-    /* Scrollbar upgrade */
-    ::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.15) !important; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.3) !important; }
-
-    /* ═══════════════════════════════════════════════════════
-       🎵 MUSIC-APP SKIN  (MusicMine-style)
-       Streaming layout: left sidebar · album cards · player bar
-       ═══════════════════════════════════════════════════════ */
-
-    /* ── Palette shift: cyber → music (pink / purple / orange) ── */
-    html[data-theme="dark"] {
-      --bg: #0b0612 !important;
-      --surface: #150a22 !important;
-      --panel: #1a0d2b !important;
-      --border: rgba(255,255,255,0.07) !important;
-      --cyan:   #ff3d81 !important;   /* primary → hot pink */
-      --indigo: #a855f7 !important;   /* → purple */
-      --emerald:#2dd4bf !important;   /* → teal (live) */
-      --amber:  #fb923c !important;   /* → orange */
-      --red:    #f43f5e !important;
-    }
-    html[data-theme="dark"] body {
-      background:
-        radial-gradient(1000px 600px at 15% -5%, rgba(168,85,247,0.14), transparent 60%),
-        radial-gradient(900px 600px at 95% 0%, rgba(255,61,129,0.12), transparent 55%),
-        #0b0612 !important;
-    }
-
-    /* Grid + orbs recolor */
-    html[data-theme="dark"] body::before {
-      background-image:
-        linear-gradient(rgba(255,61,129,0.022) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(168,85,247,0.022) 1px, transparent 1px) !important;
-    }
-    .ao1 { background: #ff3d81 !important; }
-    .ao2 { background: #a855f7 !important; }
-
-    /* ── SIDEBAR (top nav → vertical rail) ── */
-    .nav {
-      flex-direction: column !important;
-      align-items: stretch !important;
-      width: 232px !important;
-      height: 100vh !important;
-      top: 0 !important; left: 0 !important; right: auto !important;
-      padding: 22px 14px !important;
-      border-bottom: none !important;
-      border-right: 1px solid rgba(255,255,255,0.06) !important;
-      background: rgba(13,6,22,0.92) !important;
-      backdrop-filter: blur(24px) !important;
-      gap: 6px;
-    }
-    .nav::after { display: none !important; }
-    .nav-logo { margin-right: 0 !important; padding: 4px 8px 18px; gap: 12px !important; }
-    .nav-logo-icon {
-      width: 40px !important; height: 40px !important; border-radius: 12px !important;
-      background: linear-gradient(135deg, #ff3d81, #a855f7) !important;
-      box-shadow: 0 8px 24px rgba(255,61,129,0.35) !important;
-    }
-    .nav-logo-text { font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 17px !important; font-weight: 800 !important; letter-spacing: -0.3px !important; }
-    .nav-logo-text span { color: #ff3d81 !important; }
-
-    .nav-links { flex-direction: column !important; margin-right: 0 !important; gap: 4px !important; margin-top: 8px; }
-    .nav-link { padding: 11px 14px !important; border-radius: 12px !important; font-size: 13px !important; font-weight: 600 !important; gap: 12px !important; }
-    .nav-link i { font-size: 14px !important; width: 18px; text-align: center; }
-    .nav-link:hover { background: rgba(255,255,255,0.05) !important; }
-    .nav-link.active {
-      color: #fff !important;
-      background: linear-gradient(135deg, rgba(255,61,129,0.22), rgba(168,85,247,0.22)) !important;
-      border: 1px solid rgba(255,61,129,0.3) !important;
-    }
-
-    .nav-actions {
-      flex-direction: column !important; align-items: stretch !important;
-      margin-top: auto !important; gap: 10px !important;
-      padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06);
-    }
-    .nav-user { justify-content: flex-start !important; border-radius: 12px !important; padding: 8px 10px !important; }
-    .nav-avatar { background: linear-gradient(135deg, #a855f7, #ff3d81) !important; border-radius: 10px !important; }
-    .nav-username { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    .theme-btn, .nav-logout { align-self: flex-start; }
-    .nav-logout { margin-left: 4px !important; }
-
-    /* ── MAIN shifts right of sidebar ── */
-    .main { margin-left: 232px !important; padding: 28px 32px 96px !important; max-width: 1280px !important; }
-
-    /* ── Page header → "listening to" banner ── */
-    .page-header { background: linear-gradient(135deg, rgba(255,61,129,0.08), rgba(168,85,247,0.06)) !important; border: 1px solid rgba(255,61,129,0.15) !important; border-radius: 20px !important; }
-    .page-title-icon { background: linear-gradient(135deg, #ff3d81, #a855f7) !important; border: none !important; color: #fff !important; box-shadow: 0 8px 20px rgba(255,61,129,0.3); }
-    .btn-primary { background: linear-gradient(135deg, #ff3d81, #a855f7) !important; box-shadow: 0 6px 22px rgba(255,61,129,0.35) !important; border-radius: 99px !important; padding: 10px 20px !important; }
-
-    /* ── STAT CARDS → album tiles ── */
-    .stat-card { border-radius: 20px !important; }
-    .stat-icon {
-      width: 48px !important; height: 48px !important; border-radius: 14px !important;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    }
-    .stat-card.c-indigo .stat-icon { background: linear-gradient(135deg, #a855f7, #6366f1) !important; color: #fff !important; border: none !important; }
-    .stat-card.c-emerald .stat-icon { background: linear-gradient(135deg, #2dd4bf, #06b6d4) !important; color: #fff !important; border: none !important; }
-    .stat-card.c-cyan .stat-icon { background: linear-gradient(135deg, #ff3d81, #f43f5e) !important; color: #fff !important; border: none !important; }
-    .stat-card.c-amber .stat-icon { background: linear-gradient(135deg, #fb923c, #f59e0b) !important; color: #fff !important; border: none !important; }
-    .stat-card.c-cyan   { border-top-color: rgba(255,61,129,0.4) !important; }
-    .stat-card.c-cyan:hover   { box-shadow: 0 20px 50px rgba(255,61,129,0.15) !important; }
-    .stat-card.c-indigo { border-top-color: rgba(168,85,247,0.4) !important; }
-    .stat-card.c-indigo:hover { box-shadow: 0 20px 50px rgba(168,85,247,0.15) !important; }
-
-    /* ── Cards/tables → rounder, music vibe ── */
-    .chart-card, .heatmap-card, .hs-card, .table-card { border-radius: 22px !important; }
-    .api-mgmt-wrap { border-radius: 22px !important; }
-    .api-mgmt-icon { background: linear-gradient(135deg, #ff3d81, #a855f7) !important; border: none !important; color: #fff !important; }
-
-    /* API endpoint cards → album covers */
-    .api-card-icon-wrap {
-      width: 46px !important; height: 46px !important; border-radius: 13px !important;
-      background: linear-gradient(135deg, rgba(255,61,129,0.18), rgba(168,85,247,0.18)) !important;
-      border: 1px solid rgba(255,61,129,0.12) !important;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-    }
-    .api-card-item.is-on:hover { background: rgba(255,61,129,0.04) !important; }
-    .toggle-switch input:checked + .toggle-track { background: rgba(255,61,129,0.25) !important; border-color: rgba(255,61,129,0.5) !important; }
-    .toggle-switch input:checked + .toggle-track .toggle-thumb { background: #ff3d81 !important; }
-
-    /* Heatmap recolor → pink */
-    .hm-cell[data-level="1"], .hm-legend-cell[data-level="1"] { background: rgba(255,61,129,0.2) !important; }
-    .hm-cell[data-level="2"], .hm-legend-cell[data-level="2"] { background: rgba(255,61,129,0.42) !important; }
-    .hm-cell[data-level="3"], .hm-legend-cell[data-level="3"] { background: rgba(255,61,129,0.66) !important; }
-    .hm-cell[data-level="4"], .hm-legend-cell[data-level="4"] { background: rgba(255,61,129,0.9) !important; }
-
-    /* Buttons / modals accent */
-    .btn-modal-primary { background: linear-gradient(135deg, #ff3d81, #a855f7) !important; }
-    .key-badge { color: #ff3d81 !important; background: rgba(255,61,129,0.08) !important; border-color: rgba(255,61,129,0.2) !important; }
-
-    /* ═══ PLAYER BAR (live ticker → now-playing) ═══ */
-    #ws-bar {
-      left: 232px !important;
-      height: 62px !important;
-      background: linear-gradient(90deg, rgba(26,13,43,0.98), rgba(13,6,22,0.98)) !important;
-      border-top: 1px solid rgba(255,61,129,0.18) !important;
-      padding: 0 20px;
-      gap: 18px;
-    }
-    #ws-bar-label {
-      border-right: 1px solid rgba(255,255,255,0.08) !important;
-      color: #ff3d81 !important;
-      padding-right: 18px !important;
-      display: flex !important; align-items: center !important; gap: 12px !important;
-    }
-    #ws-bar-label .ws-dot { display: none !important; }
-    /* Equalizer bars */
-    .eq { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; }
-    .eq span { width: 3px; border-radius: 2px; background: linear-gradient(180deg, #ff3d81, #a855f7); animation: eqBar 0.9s ease-in-out infinite; }
-    .eq span:nth-child(1){ height: 40%; animation-delay: 0s; }
-    .eq span:nth-child(2){ height: 90%; animation-delay: 0.15s; }
-    .eq span:nth-child(3){ height: 55%; animation-delay: 0.3s; }
-    .eq span:nth-child(4){ height: 75%; animation-delay: 0.45s; }
-    @keyframes eqBar { 0%,100%{ transform: scaleY(0.35); } 50%{ transform: scaleY(1); } }
-    .ws-event .ws-ep { color: #c084fc !important; }
-    #ws-count { color: #2dd4bf !important; border-left-color: rgba(255,61,129,0.18) !important; }
-
-    /* Toast accent */
-    .toast { border-color: rgba(255,61,129,0.3) !important; color: #ff3d81 !important; }
-
-    /* ── Responsive: collapse sidebar on mobile ── */
-    @media (max-width: 820px) {
-      .nav {
-        flex-direction: row !important; align-items: center !important;
-        width: 100% !important; height: 58px !important;
-        border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important;
-        padding: 0 16px !important; gap: 10px;
-      }
-      .nav-logo { padding: 0 !important; }
-      .nav-links { display: none !important; }
-      .nav-actions { flex-direction: row !important; margin-top: 0 !important; margin-left: auto !important; border-top: none !important; padding-top: 0 !important; align-items: center !important; }
-      .main { margin-left: 0 !important; padding: 74px 16px 92px !important; }
-      #ws-bar { left: 0 !important; }
-    }
-  </style>
-</head>
-<body>
-
-<div class="ambient-orb ao1"></div>
-<div class="ambient-orb ao2"></div>
-
-<nav class="nav scanline">
-  <div class="nav-logo">
-    <div class="nav-logo-icon"><i class="fa-solid fa-satellite-dish"></i></div>
-    <span class="nav-logo-text">OSINT<span>HUB</span></span>
-  </div>
-  <div class="nav-links">
-    <a href="/nazriya/mine" class="nav-link active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-    <a href="/nazriya/analytics" class="nav-link"><i class="fa-solid fa-chart-line"></i> Analytics</a>
-    <a href="/nazriya/login-history" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Login History</a>
-    <a href="/endpoints" class="nav-link"><i class="fa-solid fa-cubes"></i> Endpoints</a>
-  </div>
-  <div class="nav-actions">
-    <button class="theme-btn" id="themeToggle"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
-    <div class="nav-user">
-      <div class="nav-avatar"><%= user.username.charAt(0).toUpperCase() %></div>
-      <span class="nav-username"><%= user.username %></span>
-    </div>
-    <a href="/logout" class="nav-logout"><i class="fa-solid fa-right-from-bracket"></i></a>
-  </div>
-</nav>
-
-<!-- Git Update Modal -->
-<div id="gitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #30363d;border-radius:16px;padding:28px 32px;min-width:420px;max-width:90vw;">
-    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#22d3ee;margin-bottom:16px;">
-      <i class="fa-brands fa-github"></i> GitHub Update
-    </div>
-    <div id="gitLog" style="background:#010409;border:1px solid #30363d;border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#7ee787;min-height:80px;max-height:260px;overflow-y:auto;white-space:pre-wrap;">Waiting...</div>
-    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
-      <button onclick="document.getElementById('gitModal').style.display='none'" style="padding:8px 18px;border-radius:8px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;font-size:12px;">Close</button>
-    </div>
-  </div>
-</div>
-
-<main class="main">
-  <div class="page-header">
-    <div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="page-title-icon"><i class="fa-solid fa-gauge-high"></i></div>
-        <div>
-          <div class="page-title">Command Center</div>
-          <div class="page-sub">// <%= owner %> &nbsp;·&nbsp; AllAPI Admin Dashboard</div>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <button onclick="triggerGitUpdate()" class="git-update-btn" id="gitUpdateBtn"><i class="fa-brands fa-github"></i> Update</button>
-      <button class="btn-primary" onclick="openModal('generateModal')"><i class="fa-solid fa-key"></i> New Key</button>
-    </div>
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card c-indigo">
-      <div class="stat-label">API Keys</div>
-      <div class="stat-value"><%= keys.length %></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <div class="stat-sub"><%= active %> active</div>
-        <% if(active > 0) { %><span class="stat-delta-up"><i class="fa-solid fa-arrow-trend-up" style="font-size:8px"></i> <%= Math.round((active/keys.length)*100) || 0 %>%</span><% } %>
-      </div>
-      <div class="stat-icon"><i class="fa-solid fa-key"></i></div>
-    </div>
-    <div class="stat-card c-emerald">
-      <div class="stat-label">Live Keys</div>
-      <div class="stat-value"><%= active %></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <div class="stat-sub">Operational now</div>
-        <span class="stat-delta-up"><i class="fa-solid fa-circle" style="font-size:5px"></i> Online</span>
-      </div>
-      <div class="stat-icon"><i class="fa-solid fa-shield-check"></i></div>
-    </div>
-    <div class="stat-card c-cyan">
-      <div class="stat-label">Total Requests</div>
-      <div class="stat-value"><%= totalHits.toLocaleString() %></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <div class="stat-sub">All time</div>
-        <span class="stat-delta-up"><i class="fa-solid fa-bolt" style="font-size:7px"></i> Live</span>
-      </div>
-      <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
-    </div>
-    <div class="stat-card c-amber">
-      <div class="stat-label">Endpoints</div>
-      <div class="stat-value"><%= apis.length %></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <div class="stat-sub"><%= apis.filter(function(a){return a.is_active;}).length %> online</div>
-        <% var offCount = apis.filter(function(a){return !a.is_active;}).length; %>
-        <% if(offCount > 0) { %><span class="stat-delta-dn"><i class="fa-solid fa-ban" style="font-size:7px"></i> <%= offCount %> off</span><% } %>
-      </div>
-      <div class="stat-icon"><i class="fa-solid fa-cubes"></i></div>
-    </div>
-  </div>
-
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-head">
-        <div>
-          <div class="chart-title"><i class="fa-solid fa-chart-line" style="color:var(--cyan);margin-right:7px;font-size:12px"></i>Request Volume</div>
-          <div class="chart-sub">Daily traffic · last 7 days</div>
-        </div>
-        <a href="/nazriya/analytics" class="chart-link">Analytics <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
-      </div>
-      <div style="height:160px"><canvas id="dailyChart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-head">
-        <div>
-          <div class="chart-title"><i class="fa-solid fa-ranking-star" style="color:var(--violet);margin-right:7px;font-size:12px"></i>Top Endpoints</div>
-          <div class="chart-sub">By hit volume</div>
-        </div>
-      </div>
-      <div style="height:160px"><canvas id="endpointsChart"></canvas></div>
-    </div>
-  </div>
-
-  <div class="heatmap-card glass">
-    <div class="heatmap-head">
-      <div><div class="heatmap-title"><i class="fa-solid fa-calendar-days" style="color:var(--cyan);margin-right:8px"></i>Request Heatmap</div><div class="heatmap-sub">8 weeks · daily hit density</div></div>
-      <div id="hm-peak" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></div>
-    </div>
-    <div id="heatmap-grid"></div>
-    <div class="hm-legend">Less
-      <div class="hm-legend-cell" style="background:rgba(34,211,238,0.06)"></div>
-      <div class="hm-legend-cell" data-level="1"></div>
-      <div class="hm-legend-cell" data-level="2"></div>
-      <div class="hm-legend-cell" data-level="3"></div>
-      <div class="hm-legend-cell" data-level="4"></div>
-    More</div>
-  </div>
-  <div class="hm-tooltip" id="hmTooltip"></div>
-
-  <div class="health-activity-grid">
-    <div class="hs-card glass">
-      <div class="hs-head"><div class="hs-title"><i class="fa-solid fa-heart-pulse" style="color:var(--emerald)"></i> System Health</div><span class="hs-live"><span class="hs-dot"></span> Online</span></div>
-      <div class="hs-body">
-        <div class="hs-metric"><div class="hs-metric-icon" style="background:rgba(52,211,153,0.1);color:var(--emerald)"><i class="fa-solid fa-clock"></i></div><div><div class="hs-metric-label">Uptime</div><div class="hs-metric-value"><%= Math.floor(health.uptime/3600) %>h <%= Math.floor((health.uptime%3600)/60) %>m</div></div></div>
-        <div class="hs-metric"><div class="hs-metric-icon" style="background:rgba(34,211,238,0.1);color:var(--cyan)"><i class="fa-solid fa-plug-circle-check"></i></div><div><div class="hs-metric-label">Active APIs</div><div class="hs-metric-value"><%= health.activeApis %> / <%= health.totalApis %></div></div></div>
-        <div class="hs-metric"><div class="hs-metric-icon" style="background:rgba(129,140,248,0.1);color:var(--indigo)"><i class="fa-solid fa-circle-check"></i></div><div><div class="hs-metric-label">Success Rate</div><div class="hs-metric-value"><%= health.successRate %>%</div></div></div>
-        <div class="hs-metric"><div class="hs-metric-icon" style="background:rgba(251,191,36,0.1);color:var(--amber)"><i class="fa-solid fa-server"></i></div><div><div class="hs-metric-label">Total Served</div><div class="hs-metric-value"><%= health.totalReq.toLocaleString() %></div></div></div>
-      </div>
-    </div>
-    <div class="hs-card glass">
-      <div class="hs-head"><div class="hs-title"><i class="fa-solid fa-wave-square" style="color:var(--cyan)"></i> Live Activity</div><a href="/nazriya/analytics" class="hs-link">View all <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a></div>
-      <div class="activity-feed">
-        <% if(recentActivity && recentActivity.length > 0) { %>
-          <% recentActivity.forEach(function(a) { %>
-            <div class="activity-row">
-              <span class="activity-dot <%= a.ok ? 'ok' : 'err' %>"></span>
-              <span class="activity-ep"><%= a.endpoint %></span>
-              <span class="activity-code <%= a.ok ? 'ok' : 'err' %>"><%= a.code %></span>
-              <span class="activity-time"><%= new Date(a.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) %></span>
-            </div>
-          <% }); %>
-        <% } else { %><div class="activity-empty"><i class="fa-solid fa-inbox"></i> No activity yet</div><% } %>
-      </div>
-    </div>
-  </div>
-
-  <form action="/nazriya/update-settings" method="POST">
-    <div class="banner glass">
-      <div class="banner-label"><i class="fa-solid fa-triangle-exclamation"></i> Banner</div>
-      <input type="text" name="maintenance_message" value="<%= settings.maintenance_message %>" placeholder="Maintenance message...">
-      <button type="submit" class="banner-btn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-    </div>
-  </form>
-
-  <div class="table-card glass">
-    <div class="table-head-bar">
-      <div class="table-title-group"><span class="table-title">API Keys</span><span class="table-count"><%= keys.length %> total</span></div>
-      <div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="searchInput" onkeyup="filterKeys()" placeholder="Search keys..."></div>
-    </div>
-    <div style="overflow-x:auto">
-      <table id="keysTable">
-        <thead><tr>
-          <th style="text-align:left">Client</th><th style="text-align:left">Key</th><th style="text-align:left">Access</th>
-          <th style="text-align:left">Hits</th><th style="text-align:left">Expires</th><th style="text-align:left">Status</th>
-          <th style="text-align:right">Actions</th>
-        </tr></thead>
-        <tbody>
-          <% if(keys && keys.length > 0) { %>
-            <% keys.forEach(function(key) {
-              var allowed = 'All APIs';
-              try { var p=JSON.parse(key.allowed_apis); if(Array.isArray(p)&&!p.includes('all')) allowed=p.join(', '); } catch(e){}
-              var exp = key.expires_at ? new Date(key.expires_at) : null;
-              var isExpired = exp && exp < new Date();
-              var maxHits = key.max_hits || 0;
-              var hitPct  = (!key.unlimited_hits && maxHits > 0) ? Math.min(100, Math.round((key.hits / maxHits) * 100)) : 0;
-              var barLevel = hitPct >= 85 ? 'lvl-high' : hitPct >= 50 ? 'lvl-mid' : 'lvl-low';
-              var hoursLeft = exp && !isExpired ? Math.floor((exp - new Date()) / 3600000) : null;
-              var showWarn  = hoursLeft !== null && hoursLeft < 24;
-              // usage mode: unlimited flag first, then rate_limit_enabled decides ratelimited vs onetime — no more guessing off max_hits
-              var usageMode = key.unlimited_hits ? 'unlimited' : (key.rate_limit_enabled ? 'ratelimited' : 'onetime');
-              var usageLabel = usageMode === 'unlimited' ? 'Unlimited' : usageMode === 'onetime' ? 'One-Time Cap' : 'Rate Limited';
-              var usageIcon  = usageMode === 'unlimited' ? 'fa-infinity' : usageMode === 'onetime' ? 'fa-bolt' : 'fa-gauge';
-              var overridesObj = {};
-              try { overridesObj = JSON.parse(key.api_overrides || '{}'); } catch(e){}
-              var overrideOffCount = Object.keys(overridesObj).filter(function(k){ return overridesObj[k] && overridesObj[k].enabled === false; }).length;
-            %>
-            <tr>
-              <td>
-                <div class="owner-name"><%= key.name || 'Unnamed' %></div>
-                <div class="owner-handle"><%= key.owner_username || owner %></div>
-                <% if(key.note_enabled && key.key_note) { %><span class="note-badge"><i class="fa-solid fa-note-sticky" style="font-size:9px"></i><%= key.key_note %></span><% } %>
-              </td>
-              <td><div style="display:flex;align-items:center;gap:8px"><span class="key-badge"><%= key.key %></span><button onclick="copyKey('<%= key.key %>')" class="action-btn" style="border:none" title="Copy"><i class="fa-regular fa-copy"></i></button></div></td>
-              <td>
-                <span class="ep-badge"><%= allowed %></span>
-                <% if(overrideOffCount > 0) { %><span class="ep-badge-warn" title="<%= overrideOffCount %> API(s) off for this key"><i class="fa-solid fa-ban" style="font-size:8px"></i> <%= overrideOffCount %> off</span><% } %>
-              </td>
-              <td>
-                <div class="hits-val"><%= key.hits.toLocaleString() %></div>
-                <span class="usage-pill <%= usageMode %>"><i class="fa-solid <%= usageIcon %>" style="font-size:8px"></i> <%= usageLabel %></span>
-                <% if(!key.unlimited_hits && maxHits > 0) { %>
-                  <div class="hits-bar-wrap">
-                    <div class="hits-bar-track"><div class="hits-bar-fill <%= barLevel %>" style="width:<%= hitPct %>%"></div></div>
-                    <div class="hits-bar-sub"><%= key.hits %> / <%= maxHits %> (<%= hitPct %>%)</div>
-                  </div>
-                <% } else if(usageMode === 'ratelimited') { %>
-                  <div style="font-size:10px;color:var(--muted2);margin-top:3px;font-family:'JetBrains Mono',monospace"><%= key.rate_limit_per_day %>/day</div>
-                <% } %>
-              </td>
-              <td>
-                <% if(!exp){ %><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted2)">never</span>
-                <%} else {%>
-                  <div style="display:flex;align-items:center">
-                    <div><div class="expiry-val <%=isExpired?'expiry-expired':''%>"><%= exp.toLocaleDateString() %></div><div class="expiry-time"><%= exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) %></div></div>
-                    <% if(showWarn) { %><span class="expiry-warn"><i class="fa-solid fa-triangle-exclamation"></i> <%= hoursLeft %>h left</span><% } %>
-                  </div>
-                <%}%>
-              </td>
-              <td>
-                <%if(key.api_enabled===0){%><span class="badge badge-disabled"><span class="dot dot-disabled"></span>Off</span>
-                <%}else if(isExpired){%><span class="badge badge-expired"><span class="dot dot-expired"></span>Expired</span>
-                <%}else if(key.status==='active'){%><span class="badge badge-active"><span class="dot dot-active"></span>Live</span>
-                <%}else{%><span class="badge badge-expired"><span class="dot dot-expired"></span><%= key.status %></span><%}%>
-              </td>
-              <td style="text-align:right">
-                <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
-                  <button onclick="openEditModal(this)"
-                    data-id="<%= key._id %>" data-name="<%= encodeURIComponent(key.name||'') %>"
-                    data-enabled="<%= key.api_enabled %>" data-unlimited="<%= key.unlimited_hits %>"
-                    data-rl-enabled="<%= key.rate_limit_enabled %>" data-maxhits="<%= maxHits %>"
-                    data-allowed="<%= encodeURIComponent(key.allowed_apis||'') %>"
-                    data-rl-day="<%= key.rate_limit_per_day %>" data-rl-min="<%= key.rate_limit_per_minute %>"
-                    data-note="<%= encodeURIComponent(key.key_note||'') %>"
-                    data-overrides="<%= encodeURIComponent(key.api_overrides||'{}') %>"
-                    class="action-btn edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                  <button onclick="duplicateKey(<%= key._id %>)" class="action-btn dupe" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
-                  <form action="/nazriya/delete-key" method="POST" style="display:inline" onsubmit="return confirm('Delete permanently?')">
-                    <input type="hidden" name="id" value="<%= key._id %>">
-                    <button type="submit" class="action-btn delete" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            <% }); %>
-          <% } else { %>
-            <tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-key"></i><p>No keys yet. Generate your first one.</p></div></td></tr>
-          <% } %>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="api-mgmt-wrap">
-    <div class="api-mgmt-header">
-      <div class="api-mgmt-title-group">
-        <div class="api-mgmt-icon"><i class="fa-solid fa-cubes-stacked"></i></div>
-        <div><div class="api-mgmt-title">Endpoint Control</div><div class="api-mgmt-sub">Toggle availability + auto-expiry (global — affects all keys)</div></div>
-      </div>
-      <div class="api-mgmt-controls">
-        <div class="api-search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="apiSearchInput" onkeyup="filterApis()" placeholder="Search endpoints..."></div>
-        <div class="api-filter-tabs" id="apiFilterTabs">
-          <button class="api-filter-btn active" onclick="filterByStatus('all',this)">All</button>
-          <button class="api-filter-btn" onclick="filterByStatus('on',this)"><span class="flt-dot on"></span>Online</button>
-          <button class="api-filter-btn" onclick="filterByStatus('off',this)"><span class="flt-dot off"></span>Offline</button>
-        </div>
-      </div>
-    </div>
-    <div class="api-stats-strip">
-      <div class="api-stat-pill pill-emerald"><i class="fa-solid fa-circle-check"></i><span id="apiOnlineCount"><%= apis.filter(function(a){return a.is_active===1;}).length %></span> online</div>
-      <div class="api-stat-pill pill-red"><i class="fa-solid fa-circle-xmark"></i><span id="apiOfflineCount"><%= apis.filter(function(a){return a.is_active===0;}).length %></span> offline</div>
-      <div class="api-stat-pill pill-slate"><i class="fa-solid fa-layer-group"></i><%= apis.length %> total</div>
-      <button class="api-bulk-btn bulk-on" onclick="bulkToggle(true)"><i class="fa-solid fa-power-off"></i> Enable All</button>
-      <button class="api-bulk-btn bulk-off" onclick="bulkToggle(false)"><i class="fa-solid fa-ban"></i> Disable All</button>
-    </div>
-    <div class="api-grid" id="apiGrid">
-      <% apis.forEach(function(api) {
-         var apiExp = api.expires_at ? new Date(api.expires_at) : null;
-         var apiExpHoursLeft = apiExp ? Math.floor((apiExp - new Date()) / 3600000) : null;
-      %>
-      <div class="api-card-item <%= api.is_active ? 'is-on' : 'is-off' %>" data-name="<%= api.display_name.toLowerCase() %>" data-status="<%= api.is_active ? 'on' : 'off' %>" data-id="<%= api._id %>" id="apicard-<%= api._id %>">
-        <div class="api-card-top">
-          <div class="api-card-icon-wrap"><span><%= api.display_name.split(' ')[0] %></span></div>
-          <label class="toggle-switch" title="Toggle <%= api.display_name %>">
-            <input type="checkbox" <%= api.is_active ? 'checked' : '' %> onchange="toggleApi(<%= api._id %>, this.checked, '<%= api.name %>')" id="toggle-<%= api._id %>">
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </label>
-        </div>
-        <div class="api-card-name"><%= api.display_name.replace(/^\S+\s/, '') %></div>
-        <div class="api-card-path"><%= api.endpoint %></div>
-        <% if(apiExp) { %>
-          <span class="api-expiry-badge" id="apiexp-badge-<%= api._id %>"><i class="fa-solid fa-hourglass-half" style="font-size:8px"></i> <%= apiExpHoursLeft > 0 ? apiExpHoursLeft + 'h left' : 'expired' %></span>
-        <% } %>
-        <div class="api-card-foot">
-          <span class="api-status-badge <%= api.is_active ? 'badge-live' : 'badge-dead' %>"><span class="badge-dot"></span><%= api.is_active ? 'Live' : 'Off' %></span>
-          <div class="api-card-btns">
-            <button class="api-msg-btn" onclick="openMsgModal(<%= api._id %>, '<%= encodeURIComponent(api.custom_message || '') %>')" title="Offline message"><i class="fa-solid fa-message-pen"></i></button>
-            <button class="api-msg-btn <%= apiExp ? 'has-expiry' : '' %>" onclick="openExpiryModal(<%= api._id %>, '<%= apiExp ? apiExp.toISOString() : '' %>')" title="Set auto-expiry"><i class="fa-solid fa-clock"></i></button>
-          </div>
-        </div>
-      </div>
-      <% }); %>
-    </div>
-    <div class="api-empty" id="apiEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i><p>No endpoints match</p></div>
-  </div>
-
-  <div class="modal-overlay" id="msgModal">
-    <div class="modal" style="max-width:420px">
-      <div class="modal-header"><div class="modal-title"><i class="fa-solid fa-message-pen"></i> Offline Message</div><button class="modal-close" onclick="closeModal('msgModal')"><i class="fa-solid fa-xmark"></i></button></div>
-      <div class="modal-body">
-        <div class="form-group"><label class="form-label">Message shown when endpoint is offline / expired</label><textarea id="msgModalText" rows="3" class="form-input" style="resize:vertical" placeholder="API is currently turned off."></textarea></div>
-        <input type="hidden" id="msgModalId">
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="saveMsgModal()"><i class="fa-solid fa-floppy-disk"></i> Save Message</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── API AUTO-EXPIRY MODAL ── -->
-  <div class="modal-overlay" id="expiryModal">
-    <div class="modal" style="max-width:420px">
-      <div class="modal-header"><div class="modal-title"><i class="fa-solid fa-clock"></i> Auto-Expiry</div><button class="modal-close" onclick="closeModal('expiryModal')"><i class="fa-solid fa-xmark"></i></button></div>
-      <div class="modal-body">
-        <div class="usage-hint" style="margin-bottom:16px">Once this time passes, the API turns itself off automatically — no manual click needed.</div>
-        <div class="form-grid-2" style="margin-bottom:16px">
-          <div><label class="form-label">Date</label><input type="date" id="expiryModalDate" class="form-input"></div>
-          <div><label class="form-label">Time</label><input type="time" id="expiryModalTime" value="23:59" class="form-input"></div>
-        </div>
-        <input type="hidden" id="expiryModalId">
-        <button class="btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="saveExpiryModal()"><i class="fa-solid fa-floppy-disk"></i> Set Expiry</button>
-        <button class="btn-modal" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:var(--red)" onclick="clearExpiryModal()"><i class="fa-solid fa-trash-can"></i> Clear Expiry</button>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<div id="ws-bar">
-  <div id="ws-bar-label"><span class="ws-dot" id="ws-dot"></span><span class="eq"><span></span><span></span><span></span><span></span></span>NOW LIVE</div>
-  <div id="ws-ticker"></div>
-  <div id="ws-count">0 hits</div>
-</div>
-
-<div id="generateModal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title"><i class="fa-solid fa-key"></i> Generate API Key</div><button class="modal-close" onclick="closeModal('generateModal')"><i class="fa-solid fa-xmark"></i></button></div>
-    <div class="modal-body">
-      <form action="/nazriya/generate-key" method="POST">
-        <div class="form-group"><label class="form-label">Client Name</label><input type="text" name="name" required placeholder="e.g. Premium Client" class="form-input"></div>
-        <div class="form-section">
-          <div class="form-section-label">Custom Key</div>
-          <div class="toggle-row" style="margin-bottom:10px"><label>Enable custom key string</label><input type="checkbox" id="enable_custom" name="enable_custom" onchange="document.getElementById('custom_key_input').disabled=!this.checked"></div>
-          <input type="text" id="custom_key_input" name="custom_key" disabled placeholder="SAHIL_VIP_KEY" class="form-input" style="opacity:0.4">
-        </div>
-        <div class="form-group">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <label class="form-label" style="margin-bottom:0">API Access</label>
-            <div class="seg-toggle">
-              <button type="button" class="seg-btn active" data-mode="all" onclick="setAccessMode('gen','all')">All</button>
-              <button type="button" class="seg-btn" data-mode="single" onclick="setAccessMode('gen','single')">Single</button>
-              <button type="button" class="seg-btn" data-mode="multi" onclick="setAccessMode('gen','multi')">Multiple</button>
-            </div>
-          </div>
-          <div id="gen-all-box" class="access-hint"><i class="fa-solid fa-globe" style="color:var(--emerald)"></i> Full access to every endpoint<input type="hidden" name="selected_apis" value="all" id="gen-all-input"></div>
-          <select id="gen-single-box" name="selected_apis" class="form-select hidden" disabled><% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %></option><%});%></select>
-          <div id="gen-multi-box" class="checkbox-grid hidden"><% apis.forEach(function(api){%><label class="check-item"><input type="checkbox" name="selected_apis" value="<%= api.name %>" disabled><span><%= api.display_name %></span></label><%});%></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Usage Mode</label>
-          <div class="usage-seg">
-            <div class="usage-seg-btn" data-usage="unlimited" onclick="setUsageMode('gen','unlimited')"><i class="fa-solid fa-infinity"></i><span>Unlimited</span></div>
-            <div class="usage-seg-btn active" data-usage="ratelimited" onclick="setUsageMode('gen','ratelimited')"><i class="fa-solid fa-gauge"></i><span>Rate Limited</span></div>
-            <div class="usage-seg-btn" data-usage="onetime" onclick="setUsageMode('gen','onetime')"><i class="fa-solid fa-bolt"></i><span>One-Time Cap</span></div>
-          </div>
-          <div class="usage-hint" id="gen-usage-hint">This key follows the daily / per-minute limits below.</div>
-
-          <input type="hidden" name="usage_mode" value="ratelimited" id="gen-usage-mode-input">
-
-          <div class="form-section" id="gen-ratelimit-box" style="margin-bottom:0">
-            <div class="form-section-label">Recurring Limits</div>
-            <div class="form-grid-3">
-              <div><label class="form-label">Daily</label><input type="number" name="rate_limit_per_day" value="100" class="form-input" style="text-align:center"></div>
-              <div><label class="form-label">Per Minute</label><input type="number" name="rate_limit_per_minute" value="5" class="form-input" style="text-align:center"></div>
-              <div><label class="form-label">Total Cap</label><input type="number" name="max_hits" value="0" min="0" class="form-input" style="text-align:center" placeholder="0=∞"></div>
-            </div>
-          </div>
-
-          <div class="form-section hidden" id="gen-onetime-box" style="margin-bottom:0">
-            <div class="form-section-label">Fixed Total Hits</div>
-            <input type="number" name="one_time_limit" id="gen-one-time-limit" value="1" min="1" class="form-input" style="text-align:center" placeholder="e.g. 5000">
-            <div style="font-size:10px;color:var(--muted2);margin-top:6px">Key works until it hits this many total requests (e.g. 5000), then auto-disables. No daily/minute limit — just this one number.</div>
-          </div>
-        </div>
-
-        <div class="form-grid-2" style="margin-bottom:16px">
-          <div><label class="form-label">Validity</label><select name="expiry" id="expirySelect" onchange="toggleCustomExpiry(this.value)" class="form-select"><option value="never">Lifetime</option><option value="3d">3 Days</option><option value="7d">7 Days</option><option value="30d">30 Days</option><option value="custom">Custom Date</option></select></div>
-          <div><label class="form-label">Note (optional)</label><input type="text" name="key_note" placeholder="e.g. VIP access" class="form-input"></div>
-        </div>
-        <div id="customExpiryContainer" class="form-grid-2 hidden" style="margin-bottom:16px">
-          <div><label class="form-label">Date</label><input type="date" name="custom_expiry_date" class="form-input"></div>
-          <div><label class="form-label">Time</label><input type="time" name="custom_expiry_time" value="23:59" class="form-input"></div>
-        </div>
-        <button type="submit" class="btn-modal btn-modal-primary">Generate Key</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div id="editModal" class="modal-overlay">
-  <div class="modal" style="max-width:540px">
-    <div class="modal-header"><div class="modal-title"><i class="fa-solid fa-sliders"></i> Edit Key</div><button class="modal-close" onclick="closeModal('editModal')"><i class="fa-solid fa-xmark"></i></button></div>
-    <div class="modal-body" style="max-height:75vh;overflow-y:auto">
-      <form id="editKeyForm" onsubmit="submitEditKey(event)">
-        <input type="hidden" id="edit_key_id" name="key_id">
-        <div class="form-group"><label class="form-label">Client Name</label><input type="text" id="edit_name" name="name" required class="form-input"></div>
-        <div class="form-group">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <label class="form-label" style="margin-bottom:0">API Access</label>
-            <div class="seg-toggle">
-              <button type="button" class="seg-btn active" data-mode="all" onclick="setAccessMode('edit','all')">All</button>
-              <button type="button" class="seg-btn" data-mode="single" onclick="setAccessMode('edit','single')">Single</button>
-              <button type="button" class="seg-btn" data-mode="multi" onclick="setAccessMode('edit','multi')">Multiple</button>
-            </div>
-          </div>
-          <div id="edit-all-box" class="access-hint"><i class="fa-solid fa-globe" style="color:var(--emerald)"></i> Full access to every endpoint<input type="hidden" name="selected_apis" value="all" id="edit-all-input"></div>
-          <select id="edit-single-box" name="selected_apis" class="form-select hidden" disabled><% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %></option><%});%></select>
-          <div id="edit-multi-box" class="checkbox-grid hidden"><% apis.forEach(function(api){%><label class="check-item"><input type="checkbox" name="selected_apis" value="<%= api.name %>" disabled><span><%= api.display_name %></span></label><%});%></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Usage Mode</label>
-          <div class="usage-seg">
-            <div class="usage-seg-btn" data-usage="unlimited" onclick="setUsageMode('edit','unlimited')"><i class="fa-solid fa-infinity"></i><span>Unlimited</span></div>
-            <div class="usage-seg-btn active" data-usage="ratelimited" onclick="setUsageMode('edit','ratelimited')"><i class="fa-solid fa-gauge"></i><span>Rate Limited</span></div>
-            <div class="usage-seg-btn" data-usage="onetime" onclick="setUsageMode('edit','onetime')"><i class="fa-solid fa-bolt"></i><span>One-Time Cap</span></div>
-          </div>
-          <div class="usage-hint" id="edit-usage-hint">This key follows the daily / per-minute limits below.</div>
-
-          <input type="hidden" name="usage_mode" value="ratelimited" id="edit-usage-mode-input">
-
-          <div class="form-section" id="edit-ratelimit-box" style="margin-bottom:0">
-            <div class="form-section-label">Recurring Limits</div>
-            <div class="form-grid-3">
-              <div><label class="form-label">Daily</label><input type="number" id="edit_rate_limit_per_day" name="rate_limit_per_day" class="form-input" style="text-align:center"></div>
-              <div><label class="form-label">Per Minute</label><input type="number" id="edit_rate_limit_per_minute" name="rate_limit_per_minute" class="form-input" style="text-align:center"></div>
-              <div><label class="form-label">Total Cap</label><input type="number" id="edit_max_hits" name="max_hits" min="0" class="form-input" style="text-align:center" placeholder="0=∞"></div>
-            </div>
-          </div>
-
-          <div class="form-section hidden" id="edit-onetime-box" style="margin-bottom:0">
-            <div class="form-section-label">Fixed Total Hits</div>
-            <input type="number" id="edit_one_time_limit" name="one_time_limit" value="1" min="1" class="form-input" style="text-align:center" placeholder="e.g. 5000">
-            <div style="font-size:10px;color:var(--muted2);margin-top:6px">Key works until it hits this many total requests, then auto-disables.</div>
-          </div>
-        </div>
-
-        <div class="form-grid-2" style="margin-bottom:16px">
-          <div><label class="form-label">Key Status</label><select id="edit_api_enabled" name="api_enabled" class="form-select"><option value="1">Enabled</option><option value="0">Disabled</option></select></div>
-          <div><label class="form-label">Note</label><input type="text" id="edit_key_note" name="key_note" placeholder="Optional note..." class="form-input"></div>
-        </div>
-
-        <div class="form-group">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <label class="form-label" style="margin-bottom:0">Per-API Override <span style="color:var(--muted2);font-weight:500;text-transform:none">(this key only)</span></label>
-            <span class="override-count-badge" id="overrideOffBadge">0 off</span>
-          </div>
-          <div class="override-list" id="edit-override-list">
-            <% apis.forEach(function(api){ %>
-              <div class="override-row" data-api="<%= api.name %>">
-                <div class="override-row-inner">
-                  <div class="override-row-top">
-                    <span class="override-emoji"><%= api.display_name.split(' ')[0] %></span>
-                    <span class="override-name"><%= api.display_name.replace(/^\S+\s/, '') %></span>
-                    <span class="override-state on">ON</span>
-                    <label class="override-toggle-mini"><input type="checkbox" checked class="override-toggle" onchange="toggleOverrideRow(this)"><span class="ot-track"><span class="ot-thumb"></span></span></label>
-                  </div>
-                  <div class="override-msg-wrap hidden"><input type="text" class="override-msg" placeholder="Custom message shown for this key when off — e.g. 'Upgrade for Instagram lookups'"></div>
-                </div>
-              </div>
-            <% }); %>
-          </div>
-        </div>
-
-        <button type="submit" class="btn-modal btn-modal-edit">Update Key</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"><i class="fa-solid fa-check"></i><span id="toastMsg">Copied!</span></div>
-
-<script>
-var dailyVolumeData  = <%- JSON.stringify(dailyVolume  || []) %>;
-var topEndpointsData = <%- JSON.stringify(topEndpoints || []) %>;
-
-new Chart(document.getElementById('dailyChart'), {
-  type: 'line',
-  data: { labels: dailyVolumeData.map(function(d){ return d.date; }), datasets: [{ data: dailyVolumeData.map(function(d){ return d.total; }), borderColor: '#ff3d81', backgroundColor: 'rgba(255,61,129,0.06)', tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#ff3d81', pointBorderColor: '#0b0612', pointBorderWidth: 2, borderWidth: 2 }] },
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#22d3ee', titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 12 } }}, scales: { x: { ticks: { color: '#334155', font: { size: 9, family: 'JetBrains Mono' }}, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false }}, y: { ticks: { color: '#334155', font: { size: 9, family: 'JetBrains Mono' }}, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false }} } }
-});
-new Chart(document.getElementById('endpointsChart'), {
-  type: 'doughnut',
-  data: { labels: topEndpointsData.map(function(d){ return d.endpoint; }), datasets: [{ data: topEndpointsData.map(function(d){ return d.hits; }), backgroundColor: ['rgba(255,61,129,0.8)','rgba(168,85,247,0.8)','rgba(45,212,191,0.8)','rgba(251,146,60,0.8)','rgba(99,102,241,0.8)'], borderWidth: 0, hoverOffset: 4 }] },
-  options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: true, position: 'right', labels: { color: '#475569', font: { size: 9, family: 'JetBrains Mono' }, padding: 10, boxWidth: 8, boxHeight: 8 }}, tooltip: { backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#22d3ee', titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 11 } } } }
-});
-
-(function(){
-  var grid = document.getElementById('heatmap-grid'), tooltip = document.getElementById('hmTooltip'), peakEl = document.getElementById('hm-peak');
-  var DAYS = 56, today = new Date(); today.setHours(0,0,0,0);
-  fetch('/nazriya/heatmap-data').then(function(r){ return r.json(); }).then(function(rows) {
-    var map = {}; rows.forEach(function(r){ map[r.date] = parseInt(r.total) || 0; });
-    var maxVal = Math.max(1, Math.max.apply(null, rows.map(function(r){ return r.total; })));
-    var peakDate = rows.reduce(function(a,b){ return b.total > a.total ? b : a; }, {total:0, date:'—'});
-    if (peakEl) peakEl.textContent = 'peak: ' + peakDate.date + ' · ' + peakDate.total + ' hits';
-    var startDate = new Date(today); var dow = startDate.getDay(); startDate.setDate(startDate.getDate() - dow - (DAYS - 7));
-    grid.innerHTML = '';
-    for (var i = 0; i < DAYS; i++) {
-      var d = new Date(startDate); d.setDate(d.getDate() + i);
-      var key = d.toISOString().split('T')[0]; var val = map[key] || 0;
-      var level = val === 0 ? 0 : val < maxVal*0.25 ? 1 : val < maxVal*0.5 ? 2 : val < maxVal*0.75 ? 3 : 4;
-      var cell = document.createElement('div'); cell.className = 'hm-cell';
-      if (level > 0) cell.setAttribute('data-level', level);
-      cell.setAttribute('data-date', key); cell.setAttribute('data-count', val);
-      cell.addEventListener('mouseenter', function(e){ var r = e.target.getBoundingClientRect(); tooltip.textContent = e.target.getAttribute('data-date') + ' — ' + e.target.getAttribute('data-count') + ' hits'; tooltip.style.display = 'block'; tooltip.style.left = (r.left + window.scrollX) + 'px'; tooltip.style.top = (r.top + window.scrollY - 34) + 'px'; });
-      cell.addEventListener('mouseleave', function(){ tooltip.style.display = 'none'; });
-      grid.appendChild(cell);
-    }
-  }).catch(function(e){ console.warn('Heatmap fetch:', e); });
-})();
-
-(function(){
-  var html = document.documentElement, btn = document.getElementById('themeToggle'), icon = document.getElementById('themeIcon');
-  var stored = localStorage.getItem('osint_theme') || 'dark';
-  function applyTheme(t) { html.setAttribute('data-theme', t); icon.className = t === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'; localStorage.setItem('osint_theme', t); }
-  applyTheme(stored);
-  btn.addEventListener('click', function(){ applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
-})();
-
-(function(){
-  var ticker = document.getElementById('ws-ticker'), dot = document.getElementById('ws-dot'), countEl = document.getElementById('ws-count');
-  var total = 0, MAX_EVENTS = 12;
-  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:'; var ws;
-  function connect() {
-    ws = new WebSocket(proto + '//' + location.host + '/ws/hits');
-    ws.onopen = function(){ dot.classList.remove('off'); };
-    ws.onclose = function(){ dot.classList.add('off'); setTimeout(connect, 3000); };
-    ws.onerror = function(){ ws.close(); };
-    ws.onmessage = function(e){
-      try {
-        var data = JSON.parse(e.data); if (data.type !== 'hit') return;
-        total++; countEl.textContent = total + ' hits';
-        var events = ticker.querySelectorAll('.ws-event'); if (events.length >= MAX_EVENTS) events[events.length - 1].remove();
-        var el = document.createElement('div'); el.className = 'ws-event';
-        var t = new Date(data.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-        el.innerHTML = '<span class="ws-ep">/api/' + data.endpoint + '</span><span class="ws-key">' + data.key + '</span><span class="ws-time">' + t + '</span>';
-        ticker.insertBefore(el, ticker.firstChild);
-      } catch(ex){}
-    };
-  }
-  connect();
-})();
-
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(function(el) { el.addEventListener('click', function(e) { if(e.target === el) el.classList.remove('open'); }); });
-
-function toggleCustomExpiry(v) { var c = document.getElementById('customExpiryContainer'); v === 'custom' ? c.classList.remove('hidden') : c.classList.add('hidden'); }
-
-function copyKey(text) { navigator.clipboard.writeText(text).then(function() { showToast('Key copied!'); }); }
-
-function duplicateKey(id) {
-  fetch('/nazriya/duplicate-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key_id: id }) })
-    .then(function(r){ return r.json(); }).then(function(d){
-      if (d.success) { showToast('Cloned → ' + d.key); setTimeout(function(){ window.location.reload(); }, 1400); }
-      else showToast('Clone failed: ' + (d.error || 'err'), true);
-    }).catch(function(){ showToast('Network error', true); });
-}
-
-function filterKeys() {
-  var val = document.getElementById('searchInput').value.toUpperCase();
-  document.getElementById('keysTable').querySelectorAll('tbody tr').forEach(function(tr) { tr.style.display = tr.textContent.toUpperCase().includes(val) ? '' : 'none'; });
-}
-
-function setAccessMode(scope, mode) {
-  var allBox = document.getElementById(scope === 'gen' ? 'gen-all-box' : 'edit-all-box');
-  var singleBox = document.getElementById(scope === 'gen' ? 'gen-single-box' : 'edit-single-box');
-  var multiBox = document.getElementById(scope === 'gen' ? 'gen-multi-box' : 'edit-multi-box');
-  var allInput = document.getElementById(scope === 'gen' ? 'gen-all-input' : 'edit-all-input');
-  allBox.classList.add('hidden'); singleBox.classList.add('hidden'); multiBox.classList.add('hidden');
-  allInput.disabled = true; singleBox.disabled = true;
-  multiBox.querySelectorAll('input').forEach(function(c){ c.disabled = true; });
-  if (mode === 'all') { allBox.classList.remove('hidden'); allInput.disabled = false; }
-  else if (mode === 'single') { singleBox.classList.remove('hidden'); singleBox.disabled = false; }
-  else if (mode === 'multi') { multiBox.classList.remove('hidden'); multiBox.querySelectorAll('input').forEach(function(c){ c.disabled = false; }); }
-  var container = scope === 'gen' ? document.getElementById('generateModal') : document.getElementById('editModal');
-  container.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.mode === mode); });
-}
-
-// ── USAGE MODE: unlimited / ratelimited / onetime — onetime now takes a real editable cap ──
-var USAGE_HINTS = {
-  unlimited   : 'No caps at all — no daily limit, no per-minute limit, no total cap.',
-  ratelimited : 'This key follows the daily / per-minute limits below (with an optional total cap too).',
-  onetime     : 'Set a fixed total-hit number below — e.g. 5000. Key auto-disables the moment it\'s reached.'
+require('dotenv').config();
+const express   = require('express');
+const session   = require('express-session');
+const MongoStore = require('connect-mongo');
+const bcrypt    = require('bcrypt');
+const axios     = require('axios');
+const rateLimit = require('express-rate-limit');
+const cors      = require('cors');
+const path      = require('path');
+const http      = require('http');
+const { WebSocketServer } = require('ws');
+const mongoose  = require('mongoose');
+
+const app = express();
+
+const OWNER    = '@sahilxalone';
+const CHANNEL  = '@OSINTxher';
+const NEW_BASE = 'https://flirt.web.id';
+const MASTER_KEYS = {
+    mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
+    ayaanmods: 'ayaan-key'
 };
-function setUsageMode(scope, mode) {
-  var modeInput = document.getElementById(scope + '-usage-mode-input');
-  var rlBox     = document.getElementById(scope + '-ratelimit-box');
-  var otBox     = document.getElementById(scope + '-onetime-box');
-  var hint      = document.getElementById(scope + '-usage-hint');
 
-  modeInput.value = mode;
+// ─── MONGODB CONNECTION ───────────────────────────────────────────────────────
+const MONGO_URI = process.env.MONGO_URI ||
+    'mongodb+srv://vf5cfx_db_user:edDgF8u5V9AChTlI@cluster0.ltogsg4.mongodb.net/?appName=Cluster0';
 
-  rlBox.classList.add('hidden'); otBox.classList.add('hidden');
-  rlBox.querySelectorAll('input').forEach(function(i){ i.disabled = true; });
-  otBox.querySelectorAll('input').forEach(function(i){ i.disabled = true; });
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch(err => { console.error('❌ MongoDB connection error:', err); process.exit(1); });
 
-  if (mode === 'ratelimited') {
-    rlBox.classList.remove('hidden');
-    rlBox.querySelectorAll('input').forEach(function(i){ i.disabled = false; });
-  } else if (mode === 'onetime') {
-    otBox.classList.remove('hidden');
-    otBox.querySelectorAll('input').forEach(function(i){ i.disabled = false; });
-  }
-
-  hint.textContent = USAGE_HINTS[mode];
-
-  var container = scope === 'gen' ? document.getElementById('generateModal') : document.getElementById('editModal');
-  container.querySelectorAll('.usage-seg-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.usage === mode); });
-}
-
-function toggleOverrideRow(chk) {
-  var row = chk.closest('.override-row'), msgWrap = row.querySelector('.override-msg-wrap'), state = row.querySelector('.override-state');
-  if (chk.checked) { row.classList.remove('is-off'); msgWrap.classList.add('hidden'); state.textContent = 'ON'; state.classList.remove('off'); state.classList.add('on'); }
-  else { row.classList.add('is-off'); msgWrap.classList.remove('hidden'); state.textContent = 'OFF'; state.classList.remove('on'); state.classList.add('off'); }
-  updateOverrideBadge();
-}
-function updateOverrideBadge() {
-  var offCount = document.querySelectorAll('#edit-override-list .override-row.is-off').length;
-  var badge = document.getElementById('overrideOffBadge');
-  badge.textContent = offCount + ' off';
-  badge.style.color = offCount > 0 ? 'var(--red)' : '';
-  badge.style.borderColor = offCount > 0 ? 'rgba(248,113,113,0.3)' : '';
-}
-function populateOverrides(overridesObj) {
-  document.querySelectorAll('#edit-override-list .override-row').forEach(function(row){
-    var api = row.dataset.api, chk = row.querySelector('.override-toggle'), msg = row.querySelector('.override-msg');
-    var o = overridesObj[api];
-    if (o && o.enabled === false) { chk.checked = false; msg.value = o.message || ''; }
-    else { chk.checked = true; msg.value = ''; }
-    toggleOverrideRow(chk);
-  });
-}
-function collectOverrides() {
-  var result = {};
-  document.querySelectorAll('#edit-override-list .override-row').forEach(function(row){
-    var api = row.dataset.api, chk = row.querySelector('.override-toggle'), msg = row.querySelector('.override-msg');
-    if (!chk.checked) result[api] = { enabled: false, message: (msg.value || '').trim() || 'This API is currently turned off for this key.' };
-  });
-  return result;
-}
-
-function openEditModal(btn) {
-  var d = btn.dataset;
-  document.getElementById('edit_key_id').value = d.id;
-  document.getElementById('edit_name').value = decodeURIComponent(d.name || '');
-  document.getElementById('edit_api_enabled').value = d.enabled !== undefined ? d.enabled : 1;
-  document.getElementById('edit_rate_limit_per_day').value = d.rlDay || 100;
-  document.getElementById('edit_rate_limit_per_minute').value = d.rlMin || 0;
-  document.getElementById('edit_max_hits').value = d.maxhits || 0;
-  document.getElementById('edit_one_time_limit').value = d.maxhits && parseInt(d.maxhits) > 0 ? d.maxhits : 1;
-  document.getElementById('edit_key_note').value = decodeURIComponent(d.note || '');
-
-  var mode = d.unlimited === '1' ? 'unlimited' : (d.rlEnabled === '0' ? 'onetime' : 'ratelimited');
-  setUsageMode('edit', mode);
-
-  var allowed = ['all'];
-  try { allowed = JSON.parse(decodeURIComponent(d.allowed || '["all"]')); } catch(e) { allowed = ['all']; }
-  if (!Array.isArray(allowed) || allowed.includes('all') || allowed.length === 0) setAccessMode('edit', 'all');
-  else if (allowed.length === 1) { setAccessMode('edit', 'single'); document.getElementById('edit-single-box').value = allowed[0]; }
-  else { setAccessMode('edit', 'multi'); document.getElementById('edit-multi-box').querySelectorAll('input').forEach(function(c){ c.checked = allowed.indexOf(c.value) >= 0; }); }
-
-  var overrides = {};
-  try { overrides = JSON.parse(decodeURIComponent(d.overrides || '{}')); } catch(e) { overrides = {}; }
-  populateOverrides(overrides);
-
-  openModal('editModal');
-}
-
-async function submitEditKey(e) {
-  e.preventDefault();
-  var form = document.getElementById('editKeyForm');
-  var fd = new FormData(form);
-  var data = {};
-  fd.forEach(function(value, key) {
-    if (key === 'selected_apis') { if (!data.selected_apis) data.selected_apis = []; data.selected_apis.push(value); }
-    else { data[key] = value; }
-  });
-  if (data.selected_apis && data.selected_apis.length === 1) data.selected_apis = data.selected_apis[0];
-  data.api_overrides = JSON.stringify(collectOverrides());
-
-  var res = await fetch('/nazriya/edit-key', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-  var result = await res.json();
-  if(result.success) { showToast('Key updated!'); setTimeout(function(){ window.location.reload(); }, 1200); }
-  else alert('Error: ' + (result.error || 'Failed'));
-}
-
-document.getElementById('enable_custom').addEventListener('change', function() {
-  var inp = document.getElementById('custom_key_input'); inp.disabled = !this.checked; inp.style.opacity = this.checked ? '1' : '0.4';
+// ─── SCHEMAS ──────────────────────────────────────────────────────────────────
+const userSchema = new mongoose.Schema({
+    username   : { type: String, unique: true, required: true },
+    password   : { type: String, required: true },
+    role       : { type: String, default: 'admin' },
+    created_by : { type: String, default: 'system' },
+    created_at : { type: Date, default: Date.now }
 });
 
-setAccessMode('gen', 'all');
-setUsageMode('gen', 'ratelimited');
+const apiKeySchema = new mongoose.Schema({
+    key                   : { type: String, unique: true, required: true },
+    name                  : { type: String, default: '' },
+    owner_username        : { type: String, default: '' },
+    owner_channel         : { type: String, default: '' },
+    created_at            : { type: Date, default: Date.now },
+    expires_at            : { type: Date, default: null },
+    hits                  : { type: Number, default: 0 },
+    status                : { type: String, default: 'active' },
+    unlimited_hits        : { type: Boolean, default: false },
+    allowed_apis          : { type: String, default: '["all"]' },
+    is_custom             : { type: Boolean, default: false },
+    rate_limit_enabled    : { type: Boolean, default: true },
+    rate_limit_per_day    : { type: Number, default: 100 },
+    rate_limit_per_minute : { type: Number, default: 5 },
+    key_note              : { type: String, default: '' },
+    note_enabled          : { type: Boolean, default: false },
+    last_updated          : { type: Date, default: Date.now },
+    api_enabled           : { type: Boolean, default: true },
+    max_hits              : { type: Number, default: 0 },
+    api_overrides         : { type: String, default: '{}' }
+});
 
-function filterApis() {
-  var val = document.getElementById('apiSearchInput').value.toLowerCase();
-  var activeFilter = document.querySelector('.api-filter-btn.active')?.dataset.filter || 'all';
-  var visible = 0;
-  document.querySelectorAll('.api-card-item').forEach(function(card) {
-    var nm = card.dataset.name.includes(val), st = activeFilter === 'all' || card.dataset.status === activeFilter;
-    if (nm && st) { card.style.display = ''; visible++; } else card.style.display = 'none';
-  });
-  document.getElementById('apiEmpty').style.display = visible === 0 ? 'block' : 'none';
-}
-function filterByStatus(status, btn) {
-  document.querySelectorAll('.api-filter-btn').forEach(function(b,i){ b.dataset.filter = ['all','on','off'][i]; b.classList.remove('active'); });
-  btn.classList.add('active'); btn.dataset.filter = status; filterApis();
-}
+const rateLimitTrackingSchema = new mongoose.Schema({
+    api_key          : String,
+    date             : String,
+    minute_timestamp : Number,
+    requests         : { type: Number, default: 0 }
+});
+rateLimitTrackingSchema.index({ api_key: 1, date: 1, minute_timestamp: 1 }, { unique: true });
 
-async function toggleApi(id, enabled, name) {
-  var card = document.getElementById('apicard-' + id); card.classList.add('updating');
-  try {
-    var res = await fetch('/nazriya/toggle-api', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: enabled ? 1 : 0 }) });
-    var data = await res.json();
-    if (data.success) {
-      card.classList.toggle('is-on', enabled); card.classList.toggle('is-off', !enabled); card.dataset.status = enabled ? 'on' : 'off';
-      var badge = card.querySelector('.api-status-badge');
-      if (badge) { badge.className = 'api-status-badge ' + (enabled ? 'badge-live' : 'badge-dead'); badge.innerHTML = '<span class="badge-dot"></span>' + (enabled ? 'Live' : 'Off'); }
-      document.getElementById('apiOnlineCount').textContent  = document.querySelectorAll('.api-card-item.is-on').length;
-      document.getElementById('apiOfflineCount').textContent = document.querySelectorAll('.api-card-item.is-off').length;
-      showToast(name + ' ' + (enabled ? 'enabled' : 'disabled'));
-    } else { document.getElementById('toggle-' + id).checked = !enabled; showToast('Failed to update', true); }
-  } catch(e) { document.getElementById('toggle-' + id).checked = !enabled; showToast('Network error', true); }
-  card.classList.remove('updating');
-}
+const analyticsSchema = new mongoose.Schema({
+    api_key       : String,
+    endpoint      : String,
+    status_code   : Number,
+    ip_address    : String,
+    response_time : Number,
+    date          : { type: String, default: () => new Date().toISOString().split('T')[0] },
+    created_at    : { type: Date, default: Date.now }
+});
 
-async function bulkToggle(enabled) {
-  var promises = [];
-  document.querySelectorAll('.api-card-item').forEach(function(card) {
-    var id = card.dataset.id, chk = document.getElementById('toggle-' + id);
-    if (chk && chk.checked !== enabled) promises.push(toggleApi(id, enabled, card.querySelector('.api-card-name')?.textContent || 'API'));
-  });
-  await Promise.all(promises);
-  showToast(enabled ? 'All endpoints enabled' : 'All endpoints disabled');
-}
+const dailyCallsSchema = new mongoose.Schema({
+    api_key : String,
+    date    : String,
+    calls   : { type: Number, default: 0 }
+});
+dailyCallsSchema.index({ api_key: 1, date: 1 }, { unique: true });
 
-function openMsgModal(id, encodedMsg) {
-  document.getElementById('msgModalId').value = id;
-  document.getElementById('msgModalText').value = decodeURIComponent(encodedMsg) || 'API is currently turned off.';
-  openModal('msgModal');
-}
-async function saveMsgModal() {
-  var id = document.getElementById('msgModalId').value;
-  var msg = document.getElementById('msgModalText').value.trim() || 'API is currently turned off.';
-  var card = document.getElementById('apicard-' + id);
-  var isActive = card ? (card.dataset.status === 'on' ? 1 : 0) : 0;
-  try {
-    var res = await fetch('/nazriya/update-api-status', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, is_active: isActive, custom_message: msg }) });
-    var data = await res.json();
-    if (data.success) { closeModal('msgModal'); showToast('Offline message saved'); } else showToast('Save failed', true);
-  } catch(e) { showToast('Network error', true); }
-}
+const availableApiSchema = new mongoose.Schema({
+    name            : String,
+    display_name    : String,
+    endpoint        : String,
+    required_params : String,
+    example_params  : String,
+    description     : String,
+    is_active       : { type: Boolean, default: true },
+    custom_message  : { type: String, default: 'API is currently turned off.' },
+    expires_at      : { type: Date, default: null }
+});
 
-// ── API AUTO-EXPIRY ──
-function openExpiryModal(id, isoExisting) {
-  document.getElementById('expiryModalId').value = id;
-  if (isoExisting) {
-    var d = new Date(isoExisting);
-    document.getElementById('expiryModalDate').value = d.toISOString().split('T')[0];
-    document.getElementById('expiryModalTime').value = d.toTimeString().slice(0,5);
-  } else {
-    document.getElementById('expiryModalDate').value = '';
-    document.getElementById('expiryModalTime').value = '23:59';
-  }
-  openModal('expiryModal');
-}
-async function saveExpiryModal() {
-  var id = document.getElementById('expiryModalId').value;
-  var date = document.getElementById('expiryModalDate').value;
-  var time = document.getElementById('expiryModalTime').value || '23:59';
-  if (!date) { showToast('Pick a date first', true); return; }
-  var iso = new Date(date + 'T' + time).toISOString();
-  await pushApiExpiry(id, iso);
-}
-async function clearExpiryModal() {
-  var id = document.getElementById('expiryModalId').value;
-  await pushApiExpiry(id, '');
-}
-async function pushApiExpiry(id, expiresAt) {
-  try {
-    var res = await fetch('/nazriya/update-api-expiry', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ api_id: id, expires_at: expiresAt }) });
-    var data = await res.json();
-    if (data.success) { closeModal('expiryModal'); showToast(expiresAt ? 'Expiry set' : 'Expiry cleared'); setTimeout(function(){ window.location.reload(); }, 900); }
-    else showToast('Save failed', true);
-  } catch(e) { showToast('Network error', true); }
-}
+const loginHistorySchema = new mongoose.Schema({
+    username   : String,
+    role       : { type: String, default: 'unknown' },
+    ip_address : String,
+    user_agent : String,
+    status     : { type: String, default: 'success' },
+    created_at : { type: Date, default: Date.now }
+});
 
-document.querySelectorAll('.api-filter-btn').forEach(function(b, i) { b.dataset.filter = ['all','on','off'][i]; });
+const settingsSchema = new mongoose.Schema({
+    maintenance_message : { type: String, default: 'API is currently under maintenance.' }
+});
 
-function showToast(msg, err) {
-  var t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.style.background = err ? 'rgba(248,113,113,0.15)' : '';
-  t.style.borderColor = err ? 'rgba(248,113,113,0.3)' : '';
-  t.querySelector('i').className = err ? 'fa-solid fa-xmark' : 'fa-solid fa-check';
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); t.style.background = ''; t.style.borderColor = ''; t.querySelector('i').className = 'fa-solid fa-check'; }, 2200);
-}
+// ─── MODELS ───────────────────────────────────────────────────────────────────
+const User              = mongoose.model('User',             userSchema);
+const ApiKey            = mongoose.model('ApiKey',           apiKeySchema);
+const RateLimitTracking = mongoose.model('RateLimitTracking',rateLimitTrackingSchema);
+const Analytics         = mongoose.model('Analytics',        analyticsSchema);
+const DailyCalls        = mongoose.model('DailyCalls',       dailyCallsSchema);
+const AvailableApi      = mongoose.model('AvailableApi',     availableApiSchema);
+const LoginHistory      = mongoose.model('LoginHistory',     loginHistorySchema);
+const Settings          = mongoose.model('Settings',         settingsSchema);
 
-async function triggerGitUpdate() {
-  const btn = document.getElementById('gitUpdateBtn');
-  const modal = document.getElementById('gitModal');
-  const log = document.getElementById('gitLog');
-  btn.classList.add('loading');
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
-  modal.style.display = 'flex';
-  log.textContent = '⏳ Pulling from GitHub...\n';
-  try {
-    const res = await fetch('/nazriya/git-update', { method: 'POST' });
-    const data = await res.json();
-    log.textContent = data.output || data.error || 'Done.';
-    if (data.restarting) {
-      log.textContent += '\n\n🔄 Restarting server... page will reload in 5s.';
-      setTimeout(() => location.reload(), 5000);
+// ─── SEED DATA ────────────────────────────────────────────────────────────────
+async function seedData() {
+    const settingsCount = await Settings.countDocuments();
+    if (!settingsCount)
+        await Settings.create({ maintenance_message: 'API is currently under maintenance.' });
+
+    const mainUser = await User.findOne({ username: 'main' });
+    if (!mainUser)
+        await User.create({
+            username  : 'main',
+            password  : await bcrypt.hash('sahil', 10),
+            role      : 'head_admin',
+            created_by: 'system'
+        });
+
+    const sahilUser = await User.findOne({ username: 'sahil' });
+    if (!sahilUser)
+        await User.create({
+            username  : 'sahil',
+            password  : await bcrypt.hash('sexy', 10),
+            role      : 'admin',
+            created_by: 'main'
+        });
+
+    const apiCount = await AvailableApi.countDocuments();
+    if (!apiCount) {
+        const APIs = [
+            ['tg',           '📞 TG to Number',       '/api/tg',           '{"number":""}',  '{"number":"9876543210"}',   'Telegram number lookup'],
+            ['num',          '📱 Number Info',         '/api/num',          '{"number":""}',  '{"number":"9876543210"}',   'Complete number information'],
+            ['num2',         '🔍 Number Info v2',      '/api/num2',         '{"number":""}',  '{"number":"9876543210"}',   'Advanced number information'],
+            ['num-india',    '🇮🇳 Indian Number',       '/api/num-india',    '{"number":""}',  '{"number":"9876543210"}',   'Indian mobile number details'],
+            ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',  '{"number":"03001234567"}',  'Pakistani mobile number'],
+            ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chained number info'],
+            ['bom',          '💥 BOM Lookup',          '/api/bom',          '{"number":""}',  '{"number":"9876543210"}',   'BOM number lookup'],
+            ['aadhr',        '🪪 Aadhaar Info',        '/api/aadhr',        '{"q":""}',       '{"q":"123456789012"}',      'Aadhaar information lookup'],
+            ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'PAN card details'],
+            ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
+            ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
+            ['veh2num',      '🚗 Vehicle to Number',   '/api/veh2num',      '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
+            ['vehicle-info', '🚘 Vehicle Info',        '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
+            ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
+            ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
+            ['snap',         '👻 Snapchat Info',       '/api/snap',         '{"username":""}','{"username":"john_doe"}',   'Snapchat profile lookup'],
+            ['git',          '🐙 GitHub User',         '/api/git',          '{"username":""}','{"username":"octocat"}',    'GitHub profile info'],
+            ['bgmi',         '🎮 BGMI Player',         '/api/bgmi',         '{"uid":""}',     '{"uid":"5121439477"}',      'BGMI player stats'],
+            ['ff',           '🔫 FreeFire ID',         '/api/ff',           '{"uid":""}',     '{"uid":"123456789"}',       'FreeFire player info'],
+            ['ip',           '🌐 IP Geolocation',      '/api/ip',           '{"ip":""}',      '{"ip":"8.8.8.8"}',          'IP address location'],
+            ['bank',         '🏦 Bank IFSC',           '/api/bank',         '{"ifsc":""}',    '{"ifsc":"SBIN0001234"}',    'Bank branch details'],
+            ['pincode',      '📍 Pincode Info',        '/api/pincode',      '{"pin":""}',     '{"pin":"110001"}',          'Area details from pincode'],
+            ['leak',         '🔍 Leak Info',           '/api/leak',         '{"number":""}',  '{"number":"9876543210"}',   'Breach/leak database search'],
+            ['leakpro',      '🔓 Leak Pro',            '/api/leakpro',      '{"number":""}',  '{"number":"919876543210"}', 'LEAK pro information'],
+            ['adhar',        '🪪 Aadhaar Lookup',       '/api/adhar',        '{"adhar":""}',   '{"adhar":"123456789012"}',  'Aadhaar card information'],
+            ['upi',          '💳 UPI Info',             '/api/upi',          '{"upi":""}',     '{"upi":"name@okicici"}',    'UPI ID account details'],
+            ['fastag',       '🛣️ FASTag Info',          '/api/fastag',       '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'FASTag vehicle wallet info'],
+            ['challan',      '🚦 Challan Check',        '/api/challan',      '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/fine details'],
+            ['adv',          '📡 Advance Number',       '/api/adv',          '{"number":""}',  '{"number":"9876543210"}',   'Advanced number lookup'],
+            ['pan-gst',      '🔗 PAN to GST',           '/api/pan-gst',      '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'Get GST linked to PAN'],
+            ['gstin',        '🏢 GSTIN Info',           '/api/gstin',        '{"gstin":""}',   '{"gstin":"07AABCF8078M1Z3"}','GSTIN taxpayer details'],
+            ['name2gstin',   '🔎 Name to GSTIN',        '/api/name2gstin',   '{"name":""}',    '{"name":"RAHUL"}',          'Search GSTIN by business name'],
+            ['nametoinfo',   '👤 Name to Info',         '/api/nametoinfo',   '{"name":""}',    '{"name":"RAHUL"}',          'Person info by name search'],
+            ['gstreturns',   '📊 GST Returns',          '/api/gstreturns',   '{"gstin":""}',   '{"gstin":"07AABCF8078M1Z3"}','GST return filing history'],
+            ['gstin2pan',    '🔄 GSTIN to PAN',         '/api/gstin2pan',    '{"gstin":""}',   '{"gstin":"07AABCF8078M1Z3"}','Get PAN from GSTIN'],
+            ['namesearch',   '🔍 Name Search',          '/api/namesearch',   '{"q":"","from":""}','{"q":"Ramesh","from":"Delhi"}','Search person by name and location'],
+            ['ai-image',     '🎨 AI Image Gen',         '/api/ai-image',     '{"prompt":""}',  '{"prompt":"cyberpunk cat"}','Generate AI images'],
+            ['mistral',      '🤖 Mistral AI',           '/api/mistral',      '{"message":""}', '{"message":"What is AI?"}', 'Chat with Mistral AI'],
+        ];
+        await AvailableApi.insertMany(APIs.map(a => ({
+            name: a[0], display_name: a[1], endpoint: a[2],
+            required_params: a[3], example_params: a[4], description: a[5],
+            is_active: true, custom_message: 'API is currently turned off.'
+        })));
+        console.log('✅ APIs seeded');
     }
-  } catch(e) {
-    log.textContent = '❌ Error: ' + e.message;
-  }
-  btn.classList.remove('loading');
-  btn.innerHTML = '<i class="fa-brands fa-github"></i> Update';
+
+    // ─── AUTO-INSERT: add any missing APIs to existing DB ────────────────────
+    const NEW_APIS = [
+        ['adhar',      '🪪 Aadhaar Lookup',  '/api/adhar',      '{"adhar":""}',         '{"adhar":"123456789012"}',       'Aadhaar card information'],
+        ['upi',        '💳 UPI Info',         '/api/upi',        '{"upi":""}',           '{"upi":"name@okicici"}',         'UPI ID account details'],
+        ['fastag',     '🛣️ FASTag Info',      '/api/fastag',     '{"vehicle":""}',       '{"vehicle":"DL01AB1234"}',       'FASTag vehicle wallet info'],
+        ['challan',    '🚦 Challan Check',    '/api/challan',    '{"vehicle":""}',       '{"vehicle":"DL01AB1234"}',       'Vehicle challan/fine details'],
+        ['adv',        '📡 Advance Number',   '/api/adv',        '{"number":""}',        '{"number":"9876543210"}',        'Advanced number lookup'],
+        ['pan-gst',    '🔗 PAN to GST',       '/api/pan-gst',    '{"pan":""}',           '{"pan":"ABCDE1234F"}',           'Get GST linked to PAN'],
+        ['gstin',      '🏢 GSTIN Info',       '/api/gstin',      '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'GSTIN taxpayer details'],
+        ['name2gstin', '🔎 Name to GSTIN',    '/api/name2gstin', '{"name":""}',          '{"name":"RAHUL"}',               'Search GSTIN by business name'],
+        ['nametoinfo', '👤 Name to Info',     '/api/nametoinfo', '{"name":""}',          '{"name":"RAHUL"}',               'Person info by name search'],
+        ['gstreturns', '📊 GST Returns',      '/api/gstreturns', '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'GST return filing history'],
+        ['gstin2pan',  '🔄 GSTIN to PAN',     '/api/gstin2pan',  '{"gstin":""}',         '{"gstin":"07AABCF8078M1Z3"}',   'Get PAN from GSTIN'],
+        ['namesearch', '🔍 Name Search',      '/api/namesearch', '{"q":"","from":""}',   '{"q":"Ramesh","from":"Delhi"}',  'Search person by name and location'],
+    ];
+    for (const a of NEW_APIS) {
+        await AvailableApi.findOneAndUpdate(
+            { name: a[0] },
+            { $setOnInsert: {
+                name: a[0], display_name: a[1], endpoint: a[2],
+                required_params: a[3], example_params: a[4], description: a[5],
+                is_active: true, custom_message: 'API is currently turned off.'
+            }},
+            { upsert: true }
+        );
+    }
+    console.log('✅ New APIs upserted');
+
+    // ─── AUTO-FIX: rename old wrong api names in DB ───────────────────────────
+    const fixes = [
+        { old: 'veh-to-num',  name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+        { old: 'vec-to-num',  name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+        { old: 'veh2num-old', name: 'veh2num',  endpoint: '/api/veh2num',  display_name: '🚗 Vehicle to Number' },
+    ];
+    for (const f of fixes) {
+        await AvailableApi.findOneAndUpdate(
+            { name: f.old },
+            { name: f.name, endpoint: f.endpoint, display_name: f.display_name }
+        );
+    }
 }
-</script>
-</body>
-</html>
+
+mongoose.connection.once('open', () => {
+    seedData().catch(err => console.error('Seed error:', err));
+});
+
+// ─── BRUTE FORCE PROTECTION ───────────────────────────────────────────────────
+const loginAttempts = {};
+const MAX_ATTEMPTS  = 5;
+const BLOCK_MINUTES = 15;
+
+function isBlocked(key) {
+    const entry = loginAttempts[key];
+    if (!entry) return false;
+    if (entry.blockedUntil && Date.now() < entry.blockedUntil) return true;
+    if (entry.blockedUntil && Date.now() >= entry.blockedUntil) { delete loginAttempts[key]; }
+    return false;
+}
+function recordFail(key) {
+    if (!loginAttempts[key]) loginAttempts[key] = { count: 0, blockedUntil: null };
+    loginAttempts[key].count++;
+    if (loginAttempts[key].count >= MAX_ATTEMPTS)
+        loginAttempts[key].blockedUntil = Date.now() + BLOCK_MINUTES * 60 * 1000;
+}
+function resetAttempts(key) { delete loginAttempts[key]; }
+
+// ─── EXPRESS SETUP ────────────────────────────────────────────────────────────
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static('public'));
+app.use(cors());
+
+// ─── VERCEL / PROXY FIX ───────────────────────────────────────────────────────
+app.set('trust proxy', 1);
+
+app.use(session({
+    secret           : process.env.SESSION_SECRET || 'osint_secret_2024',
+    resave           : false,
+    saveUninitialized: false,
+    store            : MongoStore.create({
+        mongoUrl   : MONGO_URI,
+        ttl        : 24 * 60 * 60,
+        autoRemove : 'native'
+    }),
+    cookie: {
+        maxAge  : 24 * 60 * 60 * 1000,
+        secure  : process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
+}));
+
+const globalLimiter = rateLimit({
+    windowMs    : 60 * 1000,
+    max         : 60,
+    keyGenerator: req => req.query.key || req.ip,
+    handler     : (req, res) => res.json({ error: 'Global rate limit exceeded', contact: OWNER })
+});
+
+const requireAuth = (req, res, next) => {
+    if (!req.session.user) return res.redirect('/nazriya');
+    next();
+};
+const requireHeadAdmin = (req, res, next) => {
+    if (!req.session.user) return res.redirect('/nazriya');
+    if (req.session.user.role !== 'head_admin') return res.redirect('/nazriya/mine');
+    next();
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const getParam = (p, ...keys) => {
+    for (const k of keys)
+        if (p[k] !== undefined && p[k] !== null && p[k] !== '') return encodeURIComponent(p[k]);
+    return '';
+};
+const parseParam = (raw) => {
+    let params = {};
+    try { params = JSON.parse(raw || '{}'); } catch(_) {}
+    return params;
+};
+const formatApis = (apis) => apis.map(api => {
+    const params = parseParam(api.required_params);
+    return { ...api.toObject ? api.toObject() : api, param_name: Object.keys(params)[0] || 'param' };
+});
+
+// ─── API PROXY MAP ────────────────────────────────────────────────────────────
+const apiProxyMap = {
+    'tg'          : p => `${NEW_BASE}/api/tg?number=${getParam(p,'number','term','id','username','num','query','q')}`,
+    'num'         : p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num2'        : p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-india'   : p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
+    'num-pak'     : p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
+    'chain'       : p => `${NEW_BASE}/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
+    'bom'         : p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
+    'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
+    'number-info' : p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-newinfo' : p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'aadhr'       : p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'q','adhar','term','id','query','number')}`,
+    'pan'         : p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
+    'family'      : p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
+    'email-info'  : p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
+    'veh-to-num'  : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'veh2num'     : p => `${NEW_BASE}/api/veh2num?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
+    'vehicle'     : p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
+    'rc'          : p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
+    'insta'       : p => `${NEW_BASE}/api/insta?username=${getParam(p,'username','q','query')}`,
+    'snap'        : p => `${NEW_BASE}/api/snap?username=${getParam(p,'username','q','query')}`,
+    'git'         : p => `${NEW_BASE}/api/git?username=${getParam(p,'username','q','query')}`,
+    'bgmi'        : p => `${NEW_BASE}/api/bgmi?uid=${getParam(p,'uid','q','query')}`,
+    'ff'          : p => `${NEW_BASE}/api/ff?uid=${getParam(p,'uid','q','query')}`,
+    'ip'          : p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
+    'bank'        : p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
+    'pincode'     : p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
+    'leak'        : p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
+    'leakpro'     : p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','quiry','term')}`,
+    'adhar'       : p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'adhar','q','query','number','term','id')}`,
+    'upi'         : p => `${NEW_BASE}/api/upi?upi=${getParam(p,'upi','q','query','id')}`,
+    'fastag'      : p => `${NEW_BASE}/api/fastag?vehicle=${getParam(p,'vehicle','registration_number','q','query','term')}`,
+    'challan'     : p => `${NEW_BASE}/api/challan?vehicle=${getParam(p,'vehicle','registration_number','q','query','term')}`,
+    'adv'         : p => `${NEW_BASE}/api/adv?number=${getParam(p,'number','num','q','query','term')}`,
+    'pan-gst'     : p => `${NEW_BASE}/api/pan-gst?pan=${getParam(p,'pan','q','query')}`,
+    'gstin'       : p => `${NEW_BASE}/api/gstin?gstin=${getParam(p,'gstin','q','query','id')}`,
+    'name2gstin'  : p => `${NEW_BASE}/api/name2gstin?name=${getParam(p,'name','q','query','term')}`,
+    'nametoinfo'  : p => `${NEW_BASE}/api/nametoinfo?name=${getParam(p,'name','q','query','term')}`,
+    'gstreturns'  : p => `${NEW_BASE}/api/gstreturns?gstin=${getParam(p,'gstin','q','query','id')}`,
+    'gstin2pan'   : p => `${NEW_BASE}/api/gstin2pan?gstin=${getParam(p,'gstin','q','query','id')}`,
+    'namesearch'  : p => `${NEW_BASE}/api/namesearch?q=${getParam(p,'q','name','query','term')}&from=${getParam(p,'from','city','state','location')}`,
+    'ai-image'    : p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
+    'mistral': async (p, res, keyData) => {
+        const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
+        if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
+        const r = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+            model     : 'mistral-small-latest',
+            messages  : [{ role: 'user', content: message }],
+            max_tokens: 1024
+        }, {
+            headers: { Authorization: `Bearer ${MASTER_KEYS.mistral}`, 'Content-Type': 'application/json' },
+            timeout: 30000
+        });
+        const out = {
+            success  : true,
+            reply    : r.data.choices?.[0]?.message?.content || '',
+            developer: '@flirts_x'
+        };
+        if (keyData.note_enabled && keyData.key_note) out.key_note = keyData.key_note;
+        return res.json(out);
+    }
+};
+
+// ─── CLEAN RESPONSE ───────────────────────────────────────────────────────────
+const REMOVE_FIELDS = new Set([
+    'owner','OWNER','channel','CHANNEL','telegram','contact','instagram','twitter',
+    'fb','facebook','website','github','created_by','createdBy','owner_username',
+    'owner_channel','credit','Credits','Credit','Source','source','provider','Provider',
+    'api_source','API_Source','invalidayushh','ftgamerv2','ftgamer2',
+    '@invalidayushh','@ftgamerv2','@ftgamer2','InvalidAyush','@InvalidAyush',
+    'invalidayush','@invalidayush','DM TO BUY ACCESS','xtradeep','Kon_Hu_Mai',
+    'support','@raxusss','raxusss','Raxusss','Support','help','Help',
+    'by','By','BY','ftgamer',
+    'rate_limit','rateLimit','rate_limit_info','timestamp','Timestamp'
+]);
+
+const REMOVE_STRINGS = [
+    '@raxusss','raxusss','InvalidAyush','@InvalidAyush','invalidayush',
+    'ftgamerv2','ftgamer2','@ftgamerv2','@ftgamer2','@OSINTxarmy','@OSINTxher'
+];
+
+function cleanResponse(data) {
+    if (!data || typeof data !== 'object') return data;
+    const obj = JSON.parse(JSON.stringify(data));
+    function clean(o) {
+        if (!o || typeof o !== 'object') return;
+        for (const k of Object.keys(o)) {
+            if (REMOVE_FIELDS.has(k) || REMOVE_FIELDS.has(k.toLowerCase())) { delete o[k]; continue; }
+            if (typeof o[k] === 'string' && REMOVE_STRINGS.some(s => o[k].includes(s))) { delete o[k]; continue; }
+            if (typeof o[k] === 'object') clean(o[k]);
+        }
+    }
+    clean(obj);
+    obj.developer = '@flirts_x';
+    return obj;
+}
+
+// ─── ROUTES ───────────────────────────────────────────────────────────────────
+app.get('/', async (req, res) => {
+    try {
+        const [keys, apis] = await Promise.all([
+            ApiKey.find({}, 'hits'),
+            AvailableApi.countDocuments()
+        ]);
+        res.render('index', {
+            user      : req.session.user || null,
+            totalApis : apis,
+            totalKeys : keys.length,
+            totalHits : keys.reduce((s, k) => s + (k.hits || 0), 0),
+            owner     : OWNER,
+            channel   : CHANNEL
+        });
+    } catch (err) {
+        console.error('Index error:', err);
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/endpoints', async (req, res) => {
+    try {
+        const apis = await AvailableApi.find({ is_active: true });
+        const formatted = apis.map(api => {
+            let params = {}, examples = {};
+            try { params   = JSON.parse(api.required_params || '{}'); } catch(_) {}
+            try { examples = JSON.parse(api.example_params  || '{}'); } catch(_) {}
+            const pName = Object.keys(params)[0] || 'param';
+            return { ...api.toObject(), param_name: pName, param_example: examples[pName] || 'value', full_url: api.endpoint };
+        });
+        res.render('endpoints', {
+            apis: formatted, baseUrl: req.protocol + '://' + req.get('host'),
+            owner: OWNER, channel: CHANNEL, user: req.session.user || null
+        });
+    } catch (err) {
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/docs', async (req, res) => {
+    try {
+        const apis = await AvailableApi.find({ is_active: true });
+        const base  = req.protocol + '://' + req.get('host');
+        const formatted = apis.map(api => {
+            let params = {}, examples = {};
+            try { params   = JSON.parse(api.required_params || '{}'); } catch(_) {}
+            try { examples = JSON.parse(api.example_params  || '{}'); } catch(_) {}
+            const pName = Object.keys(params)[0] || 'query';
+            const pVal  = examples[pName] || 'sample_value';
+            return {
+                ...api.toObject(), param_name: pName, param_example: pVal,
+                full_example_url: `${base}${api.endpoint}?key=YOUR_API_KEY&${pName}=${pVal}`
+            };
+        });
+        res.render('docs', { apis: formatted, baseUrl: base, owner: OWNER, channel: CHANNEL, user: req.session.user || null });
+    } catch (err) {
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/login', (req, res) => res.status(404).send('Not found'));
+app.get('/nazriya', (req, res) => res.render('login', { error: req.query.error || null }));
+
+app.post('/nazriya', async (req, res) => {
+    const { username, password } = req.body;
+    const ip = req.ip || '';
+    const ua = req.headers['user-agent'] || '';
+    const log = (u, role, status) =>
+        LoginHistory.create({ username: u, role: role || 'unknown', ip_address: ip, user_agent: ua, status }).catch(() => {});
+
+    if (!username || !password) {
+        await log(username || null, null, 'failed_missing');
+        return res.redirect('/nazriya?error=missing');
+    }
+
+    const ipKey   = 'ip:' + ip;
+    const userKey = 'user:' + username.toLowerCase();
+
+    if (isBlocked(ipKey) || isBlocked(userKey)) {
+        await log(username, null, 'failed_blocked');
+        return res.redirect('/nazriya?error=blocked');
+    }
+
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            recordFail(ipKey); recordFail(userKey);
+            await log(username, null, 'failed_invalid');
+            return res.redirect('/nazriya?error=invalid');
+        }
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
+            recordFail(ipKey); recordFail(userKey);
+            await log(username, null, 'failed_wrong_pass');
+            return res.redirect('/nazriya?error=invalid');
+        }
+        resetAttempts(ipKey); resetAttempts(userKey);
+        req.session.user = { id: user._id.toString(), username: user.username, role: user.role };
+        await log(user.username, user.role, 'success');
+        res.redirect(user.role === 'head_admin' ? '/head-admin/dashboard' : '/nazriya/mine');
+    } catch (err) {
+        console.error('Login error:', err);
+        res.redirect('/nazriya?error=server');
+    }
+});
+
+app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
+
+app.get('/nazriya/mine', requireAuth, async (req, res) => {
+    try {
+        const [keys, apis, settings] = await Promise.all([
+            ApiKey.find().sort({ created_at: -1 }),
+            AvailableApi.find(),
+            Settings.findOne()
+        ]);
+
+        const chartAgg = await DailyCalls.aggregate([
+            { $group: { _id: '$date', total_calls: { $sum: '$calls' } } },
+            { $sort: { _id: -1 } },
+            { $limit: 7 }
+        ]);
+        const chartRows = chartAgg.map(r => ({ date: r._id, total_calls: r.total_calls })).reverse();
+
+        const topEndpoints = await Analytics.aggregate([
+            { $group: { _id: '$endpoint', hits: { $sum: 1 } } },
+            { $sort: { hits: -1 } },
+            { $limit: 5 },
+            { $project: { endpoint: '$_id', hits: 1, _id: 0 } }
+        ]);
+
+        const recentActivity = await Analytics.find().sort({ created_at: -1 }).limit(8);
+        const totalReq       = await Analytics.countDocuments();
+        const successReq     = await Analytics.countDocuments({ status_code: { $gte: 200, $lt: 300 } });
+        const successRate    = totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
+        const activeApis     = (apis || []).filter(a => a.is_active).length;
+        const recent         = (recentActivity || []).map(r => ({
+            endpoint: '/api/' + r.endpoint,
+            code    : r.status_code,
+            ok      : r.status_code >= 200 && r.status_code < 300,
+            time    : r.created_at
+        }));
+
+        res.render('dashboard', {
+            keys           : keys || [],
+            totalHits      : keys.reduce((s, k) => s + (k.hits || 0), 0),
+            active         : keys.filter(k => k.status === 'active').length,
+            apis           : formatApis(apis || []),
+            chartData      : chartRows,
+            dailyVolume    : chartRows,
+            topEndpoints   : topEndpoints || [],
+            recentActivity : recent,
+            health: {
+                uptime     : Math.floor(process.uptime()),
+                activeApis,
+                totalApis  : (apis || []).length,
+                successRate,
+                totalReq
+            },
+            user    : req.session.user,
+            baseUrl : req.protocol + '://' + req.get('host'),
+            settings: settings || { maintenance_message: 'API is currently under maintenance.' },
+            owner   : OWNER,
+            channel : CHANNEL
+        });
+    } catch (err) {
+        console.error('Admin dashboard error:', err);
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
+    try {
+        const [keys, users, apis, settings] = await Promise.all([
+            ApiKey.find().sort({ created_at: -1 }),
+            User.find().sort({ created_at: -1 }),
+            AvailableApi.find(),
+            Settings.findOne()
+        ]);
+
+        const chartAgg = await DailyCalls.aggregate([
+            { $group: { _id: '$date', total_calls: { $sum: '$calls' } } },
+            { $sort: { _id: -1 } },
+            { $limit: 7 }
+        ]);
+        const chartRows = chartAgg.map(r => ({ date: r._id, total_calls: r.total_calls })).reverse();
+
+        res.render('head_admin_dashboard', {
+            keys     : keys || [],
+            users    : users || [],
+            totalHits: keys.reduce((s, k) => s + (k.hits || 0), 0),
+            apis     : formatApis(apis || []),
+            chartData: chartRows,
+            user     : req.session.user,
+            baseUrl  : req.protocol + '://' + req.get('host'),
+            settings : settings || { maintenance_message: 'API is currently under maintenance.' },
+            owner    : OWNER,
+            channel  : CHANNEL
+        });
+    } catch (err) {
+        console.error('Head admin dashboard error:', err);
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/nazriya/analytics', requireAuth, async (req, res) => {
+    try {
+        const totalEndpoints = await AvailableApi.countDocuments();
+        res.render('analytics', { totalEndpoints, user: req.session.user, owner: OWNER, channel: CHANNEL });
+    } catch (err) {
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.get('/analytics/data', requireAuth, async (req, res) => {
+    try {
+        const [totalReq, totalSuccess, totalError, uniqueIpsAgg, latAgg, epCount] = await Promise.all([
+            Analytics.countDocuments(),
+            Analytics.countDocuments({ status_code: { $gte: 200, $lt: 300 } }),
+            Analytics.countDocuments({ status_code: { $gte: 400 } }),
+            Analytics.distinct('ip_address'),
+            Analytics.aggregate([{ $group: { _id: null, avg: { $avg: '$response_time' } } }]),
+            AvailableApi.countDocuments()
+        ]);
+
+        const uniqueIps  = uniqueIpsAgg.length;
+        const avgLatency = latAgg.length && latAgg[0].avg ? Math.round(latAgg[0].avg) : 0;
+        const errorRate  = totalReq > 0 ? ((totalError / totalReq) * 100).toFixed(1) : '0.0';
+
+        const hourlyAgg = await Analytics.aggregate([
+            { $match: { created_at: { $gte: new Date(Date.now() - 24 * 3600 * 1000) } } },
+            { $group: {
+                _id    : { $hour: '$created_at' },
+                hits   : { $sum: 1 },
+                success: { $sum: { $cond: [{ $and: [{ $gte: ['$status_code', 200] }, { $lt: ['$status_code', 300] }] }, 1, 0] } },
+                error  : { $sum: { $cond: [{ $gte: ['$status_code', 400] }, 1, 0] } }
+            }},
+            { $sort: { _id: 1 } }
+        ]);
+
+        const hourMap = {};
+        hourlyAgg.forEach(h => { hourMap[String(h._id).padStart(2,'0')] = h; });
+        const nowH = new Date().getHours();
+        const hourlyChart = [];
+        for (let i = 23; i >= 0; i--) {
+            const hh  = String((nowH - i + 24) % 24).padStart(2, '0');
+            const row = hourMap[hh];
+            hourlyChart.push({ label: hh + ':00', hits: row ? row.hits : 0, success: row ? row.success : 0, error: row ? row.error : 0 });
+        }
+
+        const endpointAgg = await Analytics.aggregate([
+            { $group: {
+                _id    : '$endpoint',
+                hits   : { $sum: 1 },
+                success: { $sum: { $cond: [{ $and: [{ $gte: ['$status_code', 200] }, { $lt: ['$status_code', 300] }] }, 1, 0] } },
+                error  : { $sum: { $cond: [{ $gte: ['$status_code', 400] }, 1, 0] } },
+                avg_lat: { $avg: '$response_time' },
+                min_lat: { $min: '$response_time' },
+                max_lat: { $max: '$response_time' }
+            }},
+            { $sort: { hits: -1 } },
+            { $limit: 15 }
+        ]);
+        const topEndpoints = endpointAgg.map(ep => ({
+            name        : ep._id,
+            hits        : ep.hits,
+            success     : ep.success,
+            error       : ep.error,
+            avgLatencyMs: ep.avg_lat ? Math.round(ep.avg_lat) : 0,
+            minLatency  : ep.min_lat || 0,
+            maxLatency  : ep.max_lat || 0,
+            errorRate   : ep.hits > 0 ? ((ep.error / ep.hits) * 100).toFixed(1) : '0.0'
+        }));
+
+        const statusAgg = await Analytics.aggregate([
+            { $group: { _id: '$status_code', count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]);
+        const statusDist = statusAgg.map(s => ({ code: s._id || 0, count: s.count }));
+
+        const recentRows = await Analytics.find().sort({ created_at: -1 }).limit(30);
+        const recentRequests = recentRows.map(r => ({
+            time      : r.created_at,
+            endpoint  : '/api/' + r.endpoint,
+            statusCode: r.status_code,
+            latencyMs : r.response_time || 0,
+            success   : r.status_code >= 200 && r.status_code < 300
+        }));
+
+        res.json({
+            totalRequests: totalReq, totalSuccess, totalError, errorRate,
+            uniqueIps, avgLatency,
+            uptime        : Math.floor(process.uptime()),
+            totalEndpoints: epCount,
+            hourlyChart, topEndpoints, statusDist, recentRequests
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/nazriya/heatmap-data', requireAuth, async (req, res) => {
+    try {
+        const cutoff = new Date(Date.now() - 56 * 24 * 3600 * 1000);
+        const rows   = await DailyCalls.aggregate([
+            { $match: { date: { $gte: cutoff.toISOString().split('T')[0] } } },
+            { $group: { _id: '$date', total: { $sum: '$calls' } } },
+            { $sort: { _id: 1 } }
+        ]);
+        res.json(rows.map(r => ({ date: r._id, total: r.total })));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/nazriya/login-history', requireAuth, async (req, res) => {
+    try {
+        const logs = await LoginHistory.find().sort({ created_at: -1 }).limit(200);
+        const topFailedIPs = await LoginHistory.aggregate([
+            { $match: { status: { $ne: 'success' } } },
+            { $group: { _id: '$ip_address', attempts: { $sum: 1 } } },
+            { $sort: { attempts: -1 } },
+            { $limit: 10 }
+        ]);
+        res.render('login_history', {
+            logs        : logs || [],
+            successCount: (logs || []).filter(l => l.status === 'success').length,
+            failCount   : (logs || []).filter(l => l.status !== 'success').length,
+            topFailedIPs: topFailedIPs.map(r => ({ ip_address: r._id, attempts: r.attempts })),
+            user        : req.session.user,
+            owner       : OWNER,
+            channel     : CHANNEL
+        });
+    } catch (err) {
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+// ─── KEY MANAGEMENT ───────────────────────────────────────────────────────────
+app.post('/nazriya/generate-key', requireAuth, async (req, res) => {
+    const {
+        name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
+        selected_apis, custom_key, rate_limit_per_day, rate_limit_per_minute,
+        key_note, custom_expiry_date, custom_expiry_time
+    } = req.body;
+    const isCustomEnabled = req.body.enable_custom === 'on';
+
+    if (isCustomEnabled && (!custom_key || !custom_key.trim()))
+        return res.status(400).send('❌ Please enter a custom key string.');
+
+    let expires_at = null;
+    const now = new Date();
+    if      (expiry === '3d')  expires_at = new Date(now.getTime() + 3  * 86400000);
+    else if (expiry === '7d')  expires_at = new Date(now.getTime() + 7  * 86400000);
+    else if (expiry === '30d') expires_at = new Date(now.getTime() + 30 * 86400000);
+    else if (expiry === 'custom' && custom_expiry_date) {
+        const d = new Date(`${custom_expiry_date}T${custom_expiry_time || '23:59'}`);
+        if (!isNaN(d)) expires_at = d;
+    }
+
+    let allowedApisJson = '["all"]';
+    if (selected_apis) {
+        if (selected_apis === 'all' || (Array.isArray(selected_apis) && selected_apis.includes('all')))
+            allowedApisJson = '["all"]';
+        else
+            allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
+    }
+
+    const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode) ? usage_mode : 'ratelimited';
+    let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+    if (mode === 'unlimited') {
+        isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+    } else if (mode === 'onetime') {
+        isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+        maxHits = Math.max(1, parseInt(one_time_limit) || 1);
+    } else {
+        isUnlimited = false; rateLimitEnabled = true;
+        perDay  = Math.max(0, parseInt(rate_limit_per_day)    || 100);
+        perMin  = Math.max(0, parseInt(rate_limit_per_minute) || 0);
+        maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+    }
+
+    const noteText = (key_note || '').trim();
+
+    try {
+        let apiKey;
+        if (isCustomEnabled && custom_key && custom_key.trim()) {
+            apiKey = custom_key.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+            if (apiKey.length < 3) return res.status(400).send('❌ Custom key must be at least 3 characters');
+            const existing = await ApiKey.findOne({ key: apiKey });
+            if (existing) return res.status(400).send('❌ Key already exists: ' + apiKey);
+        } else {
+            apiKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
+        }
+
+        await ApiKey.create({
+            key                  : apiKey,
+            name                 : name || '',
+            owner_username       : OWNER,
+            owner_channel        : CHANNEL,
+            expires_at,
+            unlimited_hits       : isUnlimited,
+            allowed_apis         : allowedApisJson,
+            status               : 'active',
+            is_custom            : isCustomEnabled,
+            rate_limit_enabled   : rateLimitEnabled,
+            rate_limit_per_day   : perDay,
+            rate_limit_per_minute: perMin,
+            key_note             : noteText,
+            note_enabled         : noteText.length > 0,
+            last_updated         : new Date(),
+            api_enabled          : true,
+            max_hits             : maxHits
+        });
+        res.redirect('/nazriya/mine');
+    } catch (err) {
+        console.error('Generate key error:', err);
+        res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+app.post('/nazriya/edit-key', requireAuth, async (req, res) => {
+    const {
+        key_id, name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
+        rate_limit_per_day, rate_limit_per_minute, key_note, status,
+        selected_apis, api_enabled, api_overrides
+    } = req.body;
+
+    if (!key_id) return res.status(400).json({ success: false, error: 'Key ID required' });
+
+    try {
+        const existing = await ApiKey.findById(key_id);
+        if (!existing) return res.status(404).json({ success: false, error: 'Key not found' });
+
+        let expires_at = existing.expires_at;
+        if (expiry && expiry !== 'keep' && expiry !== 'never') {
+            const now = new Date();
+            if      (expiry === '3d')  expires_at = new Date(now.getTime() + 3  * 86400000);
+            else if (expiry === '7d')  expires_at = new Date(now.getTime() + 7  * 86400000);
+            else if (expiry === '30d') expires_at = new Date(now.getTime() + 30 * 86400000);
+        } else if (expiry === 'never') {
+            expires_at = null;
+        }
+
+        let allowedApisJson = '["all"]';
+        if (selected_apis) {
+            if (selected_apis === 'all' || (Array.isArray(selected_apis) && selected_apis.includes('all')))
+                allowedApisJson = '["all"]';
+            else
+                allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
+        }
+
+        const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode)
+            ? usage_mode
+            : (existing.unlimited_hits ? 'unlimited' : (existing.rate_limit_enabled ? 'ratelimited' : 'onetime'));
+
+        let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+        if (mode === 'unlimited') {
+            isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+        } else if (mode === 'onetime') {
+            isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+            maxHits = Math.max(1, parseInt(one_time_limit) || parseInt(raw_max_hits) || 1);
+        } else {
+            isUnlimited = false; rateLimitEnabled = true;
+            perDay  = parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100;
+            perMin  = parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0;
+            maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+        }
+
+        const enabled  = !['false','0',0,'0'].includes(String(api_enabled));
+        const noteText = (key_note || '').trim();
+
+        let overridesJson = existing.api_overrides || '{}';
+        if (api_overrides !== undefined) {
+            try {
+                const parsed = typeof api_overrides === 'string' ? JSON.parse(api_overrides) : api_overrides;
+                overridesJson = JSON.stringify(parsed && typeof parsed === 'object' ? parsed : {});
+            } catch(_) { overridesJson = '{}'; }
+        }
+
+        let newStatus = status || existing.status;
+        if (!status && existing.status === 'expired') {
+            const stillOverCap = !isUnlimited && maxHits > 0 && existing.hits >= maxHits;
+            const dateExpired  = expires_at ? new Date(expires_at) < new Date() : false;
+            if (!stillOverCap && !dateExpired) newStatus = 'active';
+        }
+
+        await ApiKey.findByIdAndUpdate(key_id, {
+            name                 : name || existing.name,
+            allowed_apis         : allowedApisJson,
+            key_note             : noteText,
+            note_enabled         : noteText.length > 0,
+            unlimited_hits       : isUnlimited,
+            rate_limit_enabled   : rateLimitEnabled,
+            rate_limit_per_day   : perDay,
+            rate_limit_per_minute: perMin,
+            max_hits             : maxHits,
+            status               : newStatus,
+            api_enabled          : enabled,
+            api_overrides        : overridesJson,
+            expires_at,
+            last_updated         : new Date()
+        });
+        res.json({ success: true, message: 'Key updated successfully' });
+    } catch (err) {
+        console.error('Edit key error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/nazriya/delete-key', requireAuth, async (req, res) => {
+    if (!req.body.id) return res.status(400).send('Key ID required');
+    try {
+        await ApiKey.findByIdAndDelete(req.body.id);
+        res.redirect('/nazriya/mine');
+    } catch (err) { res.status(500).send('Database error: ' + err.message); }
+});
+
+app.post('/nazriya/toggle-key-enabled', requireAuth, async (req, res) => {
+    const { key_id, api_enabled } = req.body;
+    if (!key_id) return res.status(400).json({ success: false, error: 'Key ID required' });
+    const enabled = ['true','1',1,true].includes(api_enabled);
+    try {
+        await ApiKey.findByIdAndUpdate(key_id, { api_enabled: enabled, last_updated: new Date() });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.post('/nazriya/bulk-key-action', requireAuth, async (req, res) => {
+    const { key_ids, action } = req.body;
+    if (!key_ids || !Array.isArray(key_ids) || !key_ids.length)
+        return res.status(400).json({ success: false, error: 'No keys selected' });
+    try {
+        if      (action === 'enable')  await ApiKey.updateMany({ _id: { $in: key_ids } }, { api_enabled: true });
+        else if (action === 'disable') await ApiKey.updateMany({ _id: { $in: key_ids } }, { api_enabled: false });
+        else if (action === 'revoke')  await ApiKey.updateMany({ _id: { $in: key_ids } }, { status: 'disabled' });
+        else if (action === 'delete')  await ApiKey.deleteMany({ _id: { $in: key_ids } });
+        else return res.status(400).json({ success: false, error: 'Invalid action' });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.post('/nazriya/duplicate-key', requireAuth, async (req, res) => {
+    const { key_id } = req.body;
+    if (!key_id) return res.status(400).json({ success: false, error: 'key_id required' });
+    try {
+        const src = await ApiKey.findById(key_id);
+        if (!src) return res.status(404).json({ success: false, error: 'Key not found' });
+        const newKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
+        await ApiKey.create({
+            key                  : newKey,
+            name                 : (src.name || 'Unnamed') + ' (copy)',
+            owner_username       : src.owner_username,
+            owner_channel        : src.owner_channel,
+            expires_at           : src.expires_at,
+            unlimited_hits       : src.unlimited_hits,
+            allowed_apis         : src.allowed_apis,
+            status               : 'active',
+            is_custom            : false,
+            rate_limit_enabled   : src.rate_limit_enabled,
+            rate_limit_per_day   : src.rate_limit_per_day,
+            rate_limit_per_minute: src.rate_limit_per_minute,
+            key_note             : src.key_note,
+            note_enabled         : src.note_enabled,
+            last_updated         : new Date(),
+            api_enabled          : true,
+            max_hits             : src.max_hits || 0,
+            api_overrides        : src.api_overrides || '{}'
+        });
+        res.json({ success: true, key: newKey });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ─── GLOBAL API MANAGEMENT ────────────────────────────────────────────────────
+app.post('/nazriya/toggle-api', requireAuth, async (req, res) => {
+    const { api_id, is_active } = { ...req.body, ...req.query };
+    if (!api_id) return res.status(400).json({ error: 'API ID required' });
+    try {
+        await AvailableApi.findByIdAndUpdate(api_id, { is_active: !!is_active });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/nazriya/update-api-status', requireAuth, async (req, res) => {
+    const { api_id, is_active, custom_message } = { ...req.body, ...req.query };
+    if (!api_id) return res.status(400).json({ error: 'API ID required' });
+    try {
+        await AvailableApi.findByIdAndUpdate(api_id, {
+            is_active     : !!is_active,
+            custom_message: custom_message || 'API is currently turned off.'
+        });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/nazriya/update-api-expiry', requireAuth, async (req, res) => {
+    const { api_id, expires_at } = req.body;
+    if (!api_id) return res.status(400).json({ error: 'API ID required' });
+    try {
+        const expDate = expires_at ? new Date(expires_at) : null;
+        const update  = { expires_at: expDate };
+        if (expDate && expDate < new Date()) update.is_active = false;
+        await AvailableApi.findByIdAndUpdate(api_id, update);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/nazriya/update-api-name', requireAuth, async (req, res) => {
+    const { api_id, display_name } = req.body;
+    if (!api_id || !display_name) return res.status(400).json({ error: 'API ID and display name required' });
+    try {
+        await AvailableApi.findByIdAndUpdate(api_id, { display_name });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/nazriya/update-settings', requireAuth, async (req, res) => {
+    const { maintenance_message } = req.body;
+    if (!maintenance_message) return res.status(400).send('Maintenance message required');
+    try {
+        await Settings.findOneAndUpdate({}, { maintenance_message }, { upsert: true });
+        res.redirect('/nazriya/mine');
+    } catch (err) { res.status(500).send('Database error: ' + err.message); }
+});
+
+app.post('/head-admin/create-user', requireHeadAdmin, async (req, res) => {
+    const { username, password, role } = req.body;
+    if (!username || !password || !role)
+        return res.status(400).json({ success: false, error: 'username, password, role required' });
+    try {
+        const hashed = await bcrypt.hash(password, 10);
+        await User.create({ username, password: hashed, role, created_by: req.session.user.username });
+        res.json({ success: true });
+    } catch (err) {
+        if (err.code === 11000)
+            return res.status(400).json({ success: false, error: 'Username already exists' });
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/head-admin/delete-user', requireHeadAdmin, async (req, res) => {
+    const { user_id } = req.body;
+    if (!user_id) return res.status(400).json({ success: false, error: 'user_id required' });
+    try {
+        await User.findOneAndDelete({ _id: user_id, username: { $ne: 'main' } });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// ─── MAIN API ENDPOINT ────────────────────────────────────────────────────────
+app.all('/api/:endpoint', globalLimiter, async (req, res) => {
+    const userKey  = req.query.key || req.body.key;
+    const endpoint = req.params.endpoint;
+    const reqStart = Date.now();
+    const today    = new Date().toISOString().split('T')[0];
+
+    try {
+        if (!userKey)
+            return res.status(401).json({ error: 'API key required', contact: OWNER });
+
+        const targetApi = await AvailableApi.findOne({
+            $or: [{ name: endpoint }, { endpoint: `/api/${endpoint}` }]
+        });
+        if (targetApi) {
+            const apiExpired = targetApi.expires_at && new Date(targetApi.expires_at) < new Date();
+            if (!targetApi.is_active || apiExpired) {
+                if (apiExpired && targetApi.is_active)
+                    AvailableApi.findByIdAndUpdate(targetApi._id, { is_active: false }).catch(() => {});
+                return res.json({
+                    status : false,
+                    message: targetApi.custom_message || (apiExpired ? 'This API has expired.' : 'This API is currently turned off.')
+                });
+            }
+        }
+
+        const keyData = await ApiKey.findOne({ key: { $regex: new RegExp('^' + userKey + '$', 'i') } });
+        if (!keyData)
+            return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
+        if (!keyData.api_enabled)
+            return res.status(403).json({ success: false, message: 'This API Key has been disabled by administrator.' });
+        if (keyData.status !== 'active')
+            return res.status(403).json({ error: `Key status is ${keyData.status}`, contact: OWNER });
+
+        try {
+            const allowed = JSON.parse(keyData.allowed_apis || '["all"]');
+            if (!allowed.includes('all') && !allowed.includes(endpoint))
+                return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
+        } catch(_) {}
+
+        try {
+            const overrides = JSON.parse(keyData.api_overrides || '{}');
+            if (overrides[endpoint] && overrides[endpoint].enabled === false)
+                return res.json({ status: false, message: overrides[endpoint].message || 'This API is currently turned off for this key.' });
+        } catch(_) {}
+
+        if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
+            ApiKey.findByIdAndUpdate(keyData._id, { status: 'expired' }).catch(() => {});
+            return res.status(403).json({ error: 'Key expired', contact: OWNER });
+        }
+
+        if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
+            ApiKey.findByIdAndUpdate(keyData._id, { status: 'expired', api_enabled: false }).catch(() => {});
+            return res.status(403).json({
+                success: false,
+                error  : `Key expired — request limit reached (${keyData.max_hits} calls)`,
+                used   : keyData.hits,
+                limit  : keyData.max_hits,
+                contact: OWNER
+            });
+        }
+
+        // ─── RATE LIMIT — enforce internally, never leak to response ──────────
+        if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
+            const perDay = parseInt(keyData.rate_limit_per_day)    || 100;
+            const perMin = parseInt(keyData.rate_limit_per_minute) || 0;
+            const nowTs  = Math.floor(Date.now() / 60000);
+
+            const dailyAgg = await RateLimitTracking.aggregate([
+                { $match: { api_key: userKey, date: today } },
+                { $group: { _id: null, total: { $sum: '$requests' } } }
+            ]);
+            const dailyCount = dailyAgg.length ? dailyAgg[0].total : 0;
+
+            if (perDay > 0 && dailyCount >= perDay)
+                return res.status(429).json({
+                    error  : 'Daily quota exceeded',
+                    used   : dailyCount,
+                    limit  : perDay,
+                    message: `Demo quota reached for today. Resets at midnight IST. Want unlimited access? Contact @flirts_x`
+                });
+
+            if (perMin > 0) {
+                const minDoc   = await RateLimitTracking.findOne({ api_key: userKey, minute_timestamp: nowTs });
+                const minCount = minDoc ? minDoc.requests : 0;
+                if (minCount >= perMin)
+                    return res.status(429).json({
+                        error  : 'Rate limit exceeded',
+                        message: `Slow down! Max ${perMin} requests/minute. Contact @flirts_x for higher limits`
+                    });
+            }
+
+            await RateLimitTracking.findOneAndUpdate(
+                { api_key: userKey, date: today, minute_timestamp: nowTs },
+                { $inc: { requests: 1 } },
+                { upsert: true }
+            );
+        }
+
+        DailyCalls.findOneAndUpdate(
+            { api_key: userKey, date: today },
+            { $inc: { calls: 1 } },
+            { upsert: true }
+        ).catch(() => {});
+        ApiKey.findByIdAndUpdate(keyData._id, { $inc: { hits: 1 } }).catch(() => {});
+
+        wsBroadcast({ type: 'hit', endpoint, key: userKey.slice(0, 8) + '…', ts: Date.now() });
+
+        const proxyFn = apiProxyMap[endpoint];
+        if (!proxyFn)
+            return res.status(404).json({ error: 'Unknown endpoint', contact: OWNER });
+
+        const params = { ...req.query, ...req.body };
+
+        if (endpoint === 'mistral') {
+            try { await proxyFn(params, res, keyData); }
+            catch (err) {
+                console.error('Mistral error:', err);
+                res.status(500).json({ error: 'Mistral request failed', details: err.message });
+            }
+            return;
+        }
+
+        try {
+            const targetUrl  = proxyFn(params);
+            const upstream   = await axios.get(targetUrl, { timeout: 30000 });
+            const responseMs = Date.now() - reqStart;
+            let data         = cleanResponse(upstream.data);
+
+            if (keyData.note_enabled && keyData.key_note) data.key_note = keyData.key_note;
+
+            Analytics.create({
+                api_key      : userKey,
+                endpoint,
+                status_code  : upstream.status,
+                ip_address   : req.ip,
+                response_time: responseMs,
+                date         : today
+            }).catch(() => {});
+
+            res.json(data);
+        } catch (err) {
+            console.error('Proxy error:', err);
+            Analytics.create({
+                api_key      : userKey,
+                endpoint,
+                status_code  : 500,
+                ip_address   : req.ip,
+                response_time: Date.now() - reqStart,
+                date         : today
+            }).catch(() => {});
+            res.status(503).json({
+                status   : false,
+                error    : 'API Not Responding',
+                message  : '⚠️ This API is currently not responding. Please try again later.',
+                developer: '@flirts_x'
+            });
+        }
+
+    } catch (err) {
+        console.error('API handler error:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
+    }
+});
+
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+// ─── GIT UPDATE + PM2 RESTART ─────────────────────────────────────────────────
+const { exec } = require('child_process');
+app.post('/nazriya/git-update', requireAuth, (req, res) => {
+    exec('git -C ' + __dirname + ' pull', (err, stdout, stderr) => {
+        const output = (stdout || '') + (stderr || '');
+        if (err) return res.json({ output: '❌ git pull failed:\n' + output, restarting: false });
+        if (output.includes('Already up to date'))
+            return res.json({ output: '✅ Already up to date. No restart needed.\n' + output, restarting: false });
+        res.json({ output: '✅ Pull success:\n' + output, restarting: true });
+        setTimeout(() => {
+            exec('pm2 restart allapi', (e2) => {
+                if (e2) exec('node ' + __dirname + '/server.js', () => {});
+            });
+        }, 1000);
+    });
+});
+
+app.use((err, req, res, next) => {
+    console.error('Unhandled:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
+
+// ─── AUTO-EXPIRE APIS ─────────────────────────────────────────────────────────
+async function autoExpireApis() {
+    try {
+        await AvailableApi.updateMany(
+            { expires_at: { $ne: null, $lte: new Date() }, is_active: true },
+            { is_active: false }
+        );
+    } catch (err) {
+        console.error('Auto-expire APIs error:', err);
+    }
+}
+autoExpireApis();
+setInterval(autoExpireApis, 60 * 1000);
+
+// ─── SERVER + WEBSOCKET ───────────────────────────────────────────────────────
+const PORT   = process.env.PORT || 5000;
+const server = http.createServer(app);
+const wss    = new WebSocketServer({ server, path: '/ws/hits' });
+
+function wsBroadcast(payload) {
+    const msg = JSON.stringify(payload);
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) client.send(msg);
+    });
+}
+
+setInterval(() => {
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) client.ping();
+    });
+}, 25000);
+
+server.listen(PORT, () => console.log(`\n🚀 OSINT API HUB (MongoDB) — PORT ${PORT}`));
+module.exports = app;
