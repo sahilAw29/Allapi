@@ -3,255 +3,1088 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>sahil — whoami</title>
+<title>AllAPI — OSINT Intelligence Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-  :root{
-    --bg:#0a0e13;
-    --panel:#10161d;
-    --panel-2:#0d1319;
-    --border:#1e2731;
-    --text:#c9d3dc;
-    --dim:#5f6b78;
-    --cyan:#63e6d4;
-    --amber:#ffb454;
-    --red:#ff6b6b;
-    --green:#7ee787;
+  :root {
+    --bg:       #030711;
+    --bg2:      #070d1a;
+    --bg3:      #0a1428;
+    --surface:  rgba(14, 22, 44, 0.7);
+    --border:   rgba(34, 211, 238, 0.12);
+    --border2:  rgba(255,255,255,0.06);
+    --cyan:     #22d3ee;
+    --cyan2:    #06b6d4;
+    --violet:   #818cf8;
+    --emerald:  #34d399;
+    --amber:    #fbbf24;
+    --red:      #f87171;
+    --pink:     #f472b6;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --muted2:   #334155;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Inter', sans-serif;
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--bg);
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── BACKGROUND GRID + GLOW ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
     background-image:
-      radial-gradient(circle at 20% 10%, rgba(99,230,212,0.06), transparent 40%),
-      radial-gradient(circle at 80% 90%, rgba(255,180,84,0.05), transparent 40%);
-    color:var(--text);
-    font-family:'JetBrains Mono', monospace;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:32px 16px;
-    position:relative;
-    overflow-x:hidden;
+      linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
   }
-  /* scanline overlay */
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    background:repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.015) 0px,
-      rgba(255,255,255,0.015) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    z-index:5;
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(80px);
+    opacity: 0.18;
   }
-  .term{
-    width:100%;
-    max-width:620px;
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:10px;
-    box-shadow:0 0 0 1px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.55), 0 0 80px rgba(99,230,212,0.05);
-    overflow:hidden;
+  .glow-orb.g1 { width: 600px; height: 600px; background: var(--cyan); top: -150px; left: -100px; }
+  .glow-orb.g2 { width: 500px; height: 500px; background: var(--violet); bottom: -100px; right: -100px; }
+  .glow-orb.g3 { width: 300px; height: 300px; background: var(--emerald); top: 40%; left: 50%; transform: translate(-50%,-50%); opacity: 0.08; }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(3,7,17,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border2);
   }
-  .titlebar{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:10px 14px;
-    background:var(--panel-2);
-    border-bottom:1px solid var(--border);
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cyan);
+    text-decoration: none;
+    letter-spacing: -0.5px;
   }
-  .dot{width:11px;height:11px;border-radius:50%;}
-  .dot.r{background:#ff5f56;}
-  .dot.y{background:#ffbd2e;}
-  .dot.g{background:#27c93f;}
-  .titlebar span{
-    margin-left:8px;
-    color:var(--dim);
-    font-size:12.5px;
-    letter-spacing:0.02em;
+  .nav-logo .logo-bracket { color: var(--muted); }
+  .nav-logo .logo-dot { width: 7px; height: 7px; background: var(--cyan); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.7); }
   }
-  .body{
-    padding:26px 24px 30px;
-    font-size:14px;
-    line-height:1.75;
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
   }
-  .prompt{color:var(--dim);}
-  .prompt .user{color:var(--green);}
-  .prompt .at{color:var(--dim);}
-  .prompt .host{color:var(--cyan);}
-  .prompt .path{color:var(--amber);}
-  .cmd{color:var(--text);}
-  .line{white-space:pre-wrap;word-break:break-word;}
-  .block{margin-bottom:22px;}
-  .k{color:var(--dim);}
-  .v{color:var(--text);font-weight:500;}
-  .v.accent{color:var(--cyan);}
-  .name-line{
-    font-size:20px;
-    font-weight:700;
-    color:var(--cyan);
-    letter-spacing:0.03em;
-    text-shadow:0 0 18px rgba(99,230,212,0.35);
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
   }
-  .role-tags{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-top:10px;
+  .nav-links a:hover { color: var(--cyan); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .tag{
-    border:1px solid var(--border);
-    background:rgba(255,255,255,0.02);
-    color:var(--text);
-    font-size:12px;
-    padding:5px 10px;
-    border-radius:5px;
+
+  .btn-nav {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--cyan);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    letter-spacing: 0.05em;
   }
-  .status{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    color:var(--green);
-    font-size:12.5px;
-    margin-top:4px;
+  .btn-nav:hover { background: rgba(34,211,238,0.08); border-color: var(--cyan); }
+  .btn-nav.filled { background: var(--cyan); color: #000; border-color: var(--cyan); font-weight: 700; }
+  .btn-nav.filled:hover { background: var(--cyan2); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 24px 80px;
+    text-align: center;
   }
-  .status::before{
-    content:"";
-    width:7px;height:7px;
-    border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 8px var(--green);
-    animation:pulse 1.6s ease-in-out infinite;
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    background: rgba(34,211,238,0.08);
+    border: 1px solid rgba(34,211,238,0.2);
+    padding: 6px 14px;
+    border-radius: 100px;
+    letter-spacing: 0.1em;
+    margin-bottom: 32px;
+    animation: fadeInDown 0.6s ease both;
   }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:0.35;}
+  .hero-tag .dot { width: 5px; height: 5px; background: var(--cyan); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+
+  .hero-title {
+    font-family: var(--sans);
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -3px;
+    margin-bottom: 24px;
+    animation: fadeInUp 0.6s ease 0.1s both;
   }
-  .links{margin-top:6px;}
-  .link-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    padding:9px 12px;
-    margin-top:6px;
-    border:1px solid var(--border);
-    border-radius:6px;
-    text-decoration:none;
-    color:var(--text);
-    background:rgba(255,255,255,0.015);
-    transition:border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
-    font-size:13px;
+  .hero-title .line1 { display: block; color: var(--text); }
+  .hero-title .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 50%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .link-row:hover{
-    border-color:var(--cyan);
-    background:rgba(99,230,212,0.05);
-    transform:translateX(2px);
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 540px;
+    margin: 0 auto 48px;
+    font-weight: 400;
+    animation: fadeInUp 0.6s ease 0.2s both;
   }
-  .link-row .lk{color:var(--dim);}
-  .link-row .lv{color:var(--cyan);}
-  .link-row .arrow{color:var(--dim);}
-  .link-row:hover .arrow{color:var(--cyan);}
-  .footer{
-    margin-top:26px;
-    color:var(--dim);
-    font-size:12.5px;
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeInUp 0.6s ease 0.3s both;
+    margin-bottom: 80px;
   }
-  .cursor{
-    display:inline-block;
-    width:8px;height:15px;
-    background:var(--cyan);
-    margin-left:4px;
-    vertical-align:middle;
-    animation:blink 1s step-start infinite;
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 10px;
+    background: var(--cyan);
+    color: #000;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
   }
-  @keyframes blink{50%{opacity:0;}}
-  .divider{
-    border:none;
-    border-top:1px dashed var(--border);
-    margin:20px 0;
+  .btn-primary:hover { background: var(--cyan2); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(34,211,238,0.3); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 14px 28px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    transition: all 0.2s;
   }
-  @media (max-width:480px){
-    .body{padding:20px 16px 26px; font-size:13px;}
-    .name-line{font-size:17px;}
+  .btn-ghost:hover { border-color: var(--border); background: var(--surface); }
+
+  /* ── TERMINAL PREVIEW ── */
+  .terminal-wrap {
+    width: 100%;
+    max-width: 760px;
+    animation: fadeInUp 0.6s ease 0.4s both;
   }
-  @media (prefers-reduced-motion: reduce){
-    .status::before, .cursor{animation:none;}
+
+  .terminal {
+    background: rgba(7, 13, 26, 0.9);
+    border: 1px solid rgba(34,211,238,0.2);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border2);
+  }
+  .t-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .t-dot.red  { background: #ff5f57; }
+  .t-dot.yel  { background: #ffbd2e; }
+  .t-dot.grn  { background: #28c840; }
+  .t-url {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(0,0,0,0.3);
+    padding: 4px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+  }
+
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2;
+  }
+  .t-line { display: flex; gap: 10px; }
+  .t-prompt { color: var(--cyan); flex-shrink: 0; }
+  .t-cmd    { color: var(--text); }
+  .t-out    { color: var(--muted); padding-left: 20px; }
+  .t-json   { color: var(--emerald); padding-left: 20px; }
+  .t-key    { color: var(--violet); }
+  .t-val    { color: var(--amber); }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--cyan);
+    vertical-align: middle;
+    animation: blink 1.1s step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    animation: fadeInUp 0.6s ease 0.5s both;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border2);
+    padding: 32px 24px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+  .stat-box:first-child { border-radius: 14px 0 0 14px; }
+  .stat-box:last-child  { border-radius: 0 14px 14px 0; }
+  .stat-box:hover { border-color: var(--border); }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--cyan);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── SECTION SHARED ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 100px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-eyebrow::before { content: '//'; color: var(--muted2); }
+
+  .section-title {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 480px;
+    margin-bottom: 56px;
+  }
+
+  /* ── ENDPOINTS GRID ── */
+  .endpoints-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .ep-card {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.25s;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .ep-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .ep-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+  .ep-card:hover::before { opacity: 1; }
+
+  .ep-emoji { font-size: 24px; margin-bottom: 10px; }
+
+  .ep-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .ep-path {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+
+  .ep-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .ep-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(34,211,238,0.1);
+    color: var(--cyan);
+    border: 1px solid rgba(34,211,238,0.2);
+    margin-top: 10px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps-wrap {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .step-card:hover { border-color: rgba(34,211,238,0.25); }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 900;
+    color: rgba(34,211,238,0.1);
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -2px;
+  }
+
+  .step-icon {
+    width: 44px; height: 44px;
+    background: rgba(34,211,238,0.1);
+    border: 1px solid rgba(34,211,238,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cyan);
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .step-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── PROFILE SECTION ── */
+  .profile-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  .profile-left .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .profile-left .label::before { content: '//'; color: var(--muted2); }
+
+  .profile-name {
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .profile-name span {
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .profile-handle {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .profile-bio {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    max-width: 400px;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    color: var(--text);
+    text-decoration: none;
+    background: var(--surface);
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .social-btn:hover { border-color: var(--border); background: rgba(34,211,238,0.06); color: var(--cyan); }
+  .social-btn i { font-size: 14px; }
+
+  .profile-right {
+    position: relative;
+  }
+
+  .terminal-mini {
+    background: rgba(7,13,26,0.9);
+    border: 1px solid rgba(34,211,238,0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+
+  .tm-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border2);
+  }
+  .tm-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .tm-title {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    text-align: center;
+  }
+
+  .tm-body {
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .tm-comment { color: var(--muted2); }
+  .tm-key-c   { color: var(--violet); }
+  .tm-str     { color: var(--amber); }
+  .tm-num     { color: var(--cyan); }
+  .tm-bool    { color: var(--pink); }
+  .tm-punc    { color: var(--muted); }
+
+  .float-badge {
+    position: absolute;
+    top: -16px; right: -16px;
+    background: rgba(52, 211, 153, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: var(--emerald);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .float-badge .fb-dot { width: 7px; height: 7px; background: var(--emerald); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+
+  /* ── CHANNELS SECTION ── */
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .channel-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 28px;
+    text-decoration: none;
+    transition: all 0.25s;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .channel-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+
+  .channel-card.tg-main { border-color: rgba(34,211,238,0.2); }
+  .channel-card.tg-main:hover { border-color: rgba(34,211,238,0.5); background: rgba(34,211,238,0.04); }
+
+  .channel-card.tg-vip  { border-color: rgba(129,140,248,0.2); }
+  .channel-card.tg-vip:hover  { border-color: rgba(129,140,248,0.5); background: rgba(129,140,248,0.04); }
+
+  .channel-card.tg-dev  { border-color: rgba(52,211,153,0.2); }
+  .channel-card.tg-dev:hover  { border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.04); }
+
+  .ch-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .ch-icon.c1 { background: rgba(34,211,238,0.12); color: var(--cyan); }
+  .ch-icon.c2 { background: rgba(129,140,248,0.12); color: var(--violet); }
+  .ch-icon.c3 { background: rgba(52,211,153,0.12); color: var(--emerald); }
+
+  .ch-info {}
+  .ch-name { font-weight: 700; font-size: 16px; color: var(--text); margin-bottom: 4px; }
+  .ch-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+  .ch-link {
+    font-family: var(--mono);
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .c1 ~ .ch-info .ch-link, .channel-card.tg-main .ch-link { color: var(--cyan); }
+  .c2 ~ .ch-info .ch-link, .channel-card.tg-vip .ch-link  { color: var(--violet); }
+  .c3 ~ .ch-info .ch-link, .channel-card.tg-dev .ch-link  { color: var(--emerald); }
+
+  .ch-arrow {
+    position: absolute;
+    top: 24px; right: 24px;
+    color: var(--muted2);
+    font-size: 14px;
+    transition: transform 0.2s, color 0.2s;
+  }
+  .channel-card:hover .ch-arrow { transform: translate(2px, -2px); color: var(--text); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border2);
+    padding: 48px 48px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .footer-brand strong { color: var(--cyan); }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--cyan); }
+
+  .footer-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--emerald);
+  }
+  .footer-status .sd { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    position: relative;
+    z-index: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .hero-title { letter-spacing: -2px; }
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .stat-box:first-child { border-radius: 14px 0 0 0; }
+    .stat-box:nth-child(2) { border-radius: 0 14px 0 0; }
+    .stat-box:nth-child(3) { border-radius: 0 0 0 14px; }
+    .stat-box:last-child   { border-radius: 0 0 14px 0; }
+    .steps-wrap  { grid-template-columns: 1fr; }
+    .profile-wrap { grid-template-columns: 1fr; gap: 40px; }
+    footer { padding: 32px 20px 24px; }
   }
 </style>
 </head>
 <body>
-  <div class="term">
-    <div class="titlebar">
-      <div class="dot r"></div>
-      <div class="dot y"></div>
-      <div class="dot g"></div>
-      <span>about.sh — sahilxalone</span>
-    </div>
-    <div class="body">
 
-      <div class="block">
-        <div class="line prompt"><span class="user">sahil</span><span class="at">@</span><span class="host">dev</span><span class="path">:~$</span> <span class="cmd">whoami</span></div>
-        <div class="name-line">SAHIL</div>
-        <div class="line"><span class="k">username</span>&nbsp;&nbsp;<span class="v accent">@sahilxalone</span></div>
-        <div class="line"><span class="k">from</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">India</span></div>
-        <div class="status">access granted</div>
+<div class="glow-orb g1"></div>
+<div class="glow-orb g2"></div>
+<div class="glow-orb g3"></div>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="logo-dot"></div>
+    <span class="logo-bracket">[</span>ALL<span style="color:var(--violet)">API</span><span class="logo-bracket">]</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/docs">Endpoints</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#channels">Community</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/docs" class="btn-nav">View Docs</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">
+    <div class="dot"></div>
+    OSINT &amp; DATA INTELLIGENCE API
+  </div>
+
+  <h1 class="hero-title">
+    <span class="line1">Intelligence</span>
+    <span class="line2">On Demand.</span>
+  </h1>
+
+  <p class="hero-sub">
+    One unified API hub for OSINT, identity verification, and data lookups.
+    Fast, reliable, authenticated.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/docs" class="btn-primary"><i class="fa-solid fa-code"></i> Explore Endpoints</a>
+    <a href="#about" class="btn-ghost"><i class="fa-brands fa-telegram"></i> Get API Key</a>
+  </div>
+
+  <!-- Terminal -->
+  <div class="terminal-wrap">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="t-dot red"></div>
+        <div class="t-dot yel"></div>
+        <div class="t-dot grn"></div>
+        <div class="t-url">GET https://api.allapi.io/api/mobile?number=98XXXXXXXX</div>
       </div>
-
-      <hr class="divider">
-
-      <div class="block">
-        <div class="line prompt"><span class="user">sahil</span><span class="at">@</span><span class="host">dev</span><span class="path">:~$</span> <span class="cmd">cat role.txt</span></div>
-        <div class="role-tags">
-          <div class="tag">Python Developer</div>
-          <div class="tag">Bot Engineer</div>
-          <div class="tag">API Developer</div>
-          <div class="tag">Coder</div>
-          <div class="tag">Cybersecurity Enthusiast</div>
-        </div>
+      <div class="terminal-body">
+        <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">curl -H "X-API-Key: YOUR_KEY" "https://api.allapi.io/api/mobile?number=98XXXXXXXX"</span></div>
+        <div class="t-out"># 200 OK · 143ms</div>
+        <div class="t-json">{</div>
+        <div class="t-json">&nbsp;&nbsp;<span class="t-key">"status"</span><span style="color:var(--muted)">:</span> <span class="t-val">"success"</span>,</div>
+        <div class="t-json">&nbsp;&nbsp;<span class="t-key">"name"</span><span style="color:var(--muted)">:</span>   <span class="t-val">"Sahil Khan"</span>,</div>
+        <div class="t-json">&nbsp;&nbsp;<span class="t-key">"number"</span><span style="color:var(--muted)">:</span> <span class="t-val">"98XXXXXXXX"</span>,</div>
+        <div class="t-json">&nbsp;&nbsp;<span class="t-key">"operator"</span><span style="color:var(--muted)">:</span> <span class="t-val">"Jio"</span>,</div>
+        <div class="t-json">&nbsp;&nbsp;<span class="t-key">"circle"</span><span style="color:var(--muted)">:</span> <span class="t-val">"Rajasthan"</span></div>
+        <div class="t-json">}<span class="t-cursor"></span></div>
       </div>
-
-      <hr class="divider">
-
-      <div class="block">
-        <div class="line prompt"><span class="user">sahil</span><span class="at">@</span><span class="host">dev</span><span class="path">:~$</span> <span class="cmd">ls links/</span></div>
-        <div class="links">
-          <a class="link-row" href="https://t.me/bynxgc" target="_blank" rel="noopener">
-            <span class="lk">group_chat</span><span class="lv">t.me/bynxgc</span><span class="arrow">→</span>
-          </a>
-          <a class="link-row" href="https://t.me/OSINTNXERA" target="_blank" rel="noopener">
-            <span class="lk">channel</span><span class="lv">t.me/OSINTNXERA</span><span class="arrow">→</span>
-          </a>
-          <a class="link-row" href="https://t.me/osint_by_nx" target="_blank" rel="noopener">
-            <span class="lk">updates</span><span class="lv">t.me/osint_by_nx</span><span class="arrow">→</span>
-          </a>
-          <a class="link-row" href="https://t.me/TITANIUMOSINT" target="_blank" rel="noopener">
-            <span class="lk">all_bots</span><span class="lv">t.me/TITANIUMOSINT</span><span class="arrow">→</span>
-          </a>
-        </div>
-      </div>
-
-      <hr class="divider">
-
-      <div class="block">
-        <div class="line prompt"><span class="user">sahil</span><span class="at">@</span><span class="host">dev</span><span class="path">:~$</span> <span class="cmd">cat contact.txt</span></div>
-        <div class="line"><span class="k">official</span>&nbsp;&nbsp;<span class="v accent">sahilxalone.t.me</span></div>
-        <div class="line"><span class="k">alt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">mustflert.t.me</span></div>
-      </div>
-
-      <div class="footer">
-        thanks for stopping by <span class="cursor"></span>
-      </div>
-
     </div>
   </div>
+</div>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-box">
+    <div class="stat-num" id="stat-apis"><%= typeof apis !== 'undefined' ? apis.length : '30+' %></div>
+    <div class="stat-label">Endpoints</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-num" id="stat-hits">∞</div>
+    <div class="stat-label">Total Requests</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-num">99.9%</div>
+    <div class="stat-label">Uptime</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-num">&lt;200ms</div>
+    <div class="stat-label">Avg Latency</div>
+  </div>
+</div>
+
+<div class="divider" style="margin-top:80px"></div>
+
+<!-- ENDPOINTS SHOWCASE -->
+<section id="docs">
+  <div class="section-eyebrow">endpoints</div>
+  <h2 class="section-title">What you can query</h2>
+  <p class="section-sub">From mobile lookups to Aadhaar verification — every endpoint returns clean, structured JSON.</p>
+
+  <div class="endpoints-grid">
+    <% if(typeof apis !== 'undefined' && apis.length) { %>
+      <% apis.slice(0, 12).forEach(function(api) { %>
+      <div class="ep-card">
+        <div class="ep-emoji"><%= api.display_name ? api.display_name.split(' ')[0] : '🔍' %></div>
+        <div class="ep-name"><%= api.display_name ? api.display_name.replace(/^\S+\s/, '') : api.name %></div>
+        <div class="ep-path"><%= api.endpoint %></div>
+        <div class="ep-desc"><%= api.description || 'Data lookup endpoint' %></div>
+        <span class="ep-badge">JSON</span>
+      </div>
+      <% }) %>
+    <% } else { %>
+      <%
+        var fallbackApis = [
+          {emoji:'📱', name:'Mobile Lookup', path:'/api/mobile', desc:'Operator, circle, name from mobile number'},
+          {emoji:'📧', name:'Email OSINT', path:'/api/email', desc:'Breach & metadata lookup on email addresses'},
+          {emoji:'🪪', name:'Aadhaar Lookup', path:'/api/adhar', desc:'Card info from 12-digit Aadhaar number'},
+          {emoji:'🏦', name:'UPI Lookup', path:'/api/upi', desc:'Registered name from UPI ID'},
+          {emoji:'🚗', name:'FastTag Lookup', path:'/api/fastag', desc:'Vehicle FastTag account details'},
+          {emoji:'🧾', name:'PAN Info', path:'/api/pan-gst', desc:'GST linked details via PAN number'},
+          {emoji:'🏢', name:'GSTIN Lookup', path:'/api/gstin', desc:'Full GST registration details'},
+          {emoji:'💳', name:'Challan Check', path:'/api/challan', desc:'Traffic challan status by vehicle'},
+          {emoji:'👤', name:'Name Search', path:'/api/namesearch', desc:'Person search by name + location'},
+          {emoji:'🔗', name:'GSTIN↔PAN', path:'/api/gstin2pan', desc:'PAN number from GSTIN and reverse'},
+          {emoji:'📊', name:'GST Returns', path:'/api/gstreturns', desc:'Filing status and return history'},
+          {emoji:'🌐', name:'IP Lookup', path:'/api/ip', desc:'Geolocation & ISP from IP address'},
+        ];
+      %>
+      <% fallbackApis.forEach(function(a) { %>
+      <div class="ep-card">
+        <div class="ep-emoji"><%= a.emoji %></div>
+        <div class="ep-name"><%= a.name %></div>
+        <div class="ep-path"><%= a.path %></div>
+        <div class="ep-desc"><%= a.desc %></div>
+        <span class="ep-badge">JSON</span>
+      </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <div style="text-align:center;margin-top:40px">
+    <a href="/docs" class="btn-primary"><i class="fa-solid fa-list"></i> View all endpoints</a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-eyebrow">integration</div>
+  <h2 class="section-title">Ship in minutes</h2>
+  <p class="section-sub">Three steps from zero to hitting endpoints with your own API key.</p>
+
+  <div class="steps-wrap">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <div class="step-icon"><i class="fa-brands fa-telegram"></i></div>
+      <div class="step-title">Get your API key</div>
+      <div class="step-desc">Message @sahilxalone on Telegram to get a key with the access tier you need — free, limited, or unlimited.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <div class="step-icon"><i class="fa-solid fa-code"></i></div>
+      <div class="step-title">Authenticate & call</div>
+      <div class="step-desc">Pass your key as <code style="color:var(--cyan);font-family:var(--mono);font-size:12px">X-API-Key</code> header or <code style="color:var(--cyan);font-family:var(--mono);font-size:12px">?key=</code> query param on any endpoint.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <div class="step-icon"><i class="fa-solid fa-bolt"></i></div>
+      <div class="step-title">Parse clean JSON</div>
+      <div class="step-desc">Every endpoint returns structured JSON — consistent status fields, predictable error codes, millisecond response times.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ABOUT / PROFILE -->
+<section id="about">
+  <div class="profile-wrap">
+    <div class="profile-left">
+      <div class="label">builder</div>
+      <h2 class="profile-name">Sahil<br><span>Shaikh</span></h2>
+      <div class="profile-handle">@sahilxalone</div>
+      <p class="profile-bio">
+        Developer behind AllAPI. Building tools that make data access fast and clean.
+        OSINT infrastructure, automation, and backend systems.
+      </p>
+      <div class="social-links">
+        <a href="https://t.me/sahilxalone" class="social-btn" target="_blank">
+          <i class="fa-brands fa-telegram"></i> Telegram
+        </a>
+        <a href="https://t.me/sahilxalone" class="social-btn" target="_blank">
+          <i class="fa-solid fa-key"></i> Get API Key
+        </a>
+        <a href="/docs" class="social-btn">
+          <i class="fa-solid fa-file-code"></i> Documentation
+        </a>
+      </div>
+    </div>
+
+    <div class="profile-right">
+      <div class="float-badge">
+        <div class="fb-dot"></div>
+        System Online
+      </div>
+      <div class="terminal-mini">
+        <div class="tm-bar">
+          <div class="tm-dot" style="background:#ff5f57"></div>
+          <div class="tm-dot" style="background:#ffbd2e"></div>
+          <div class="tm-dot" style="background:#28c840"></div>
+          <div class="tm-title">whoami.json</div>
+        </div>
+        <div class="tm-body">
+          <div class="tm-comment">// @sahilxalone</div>
+          <div><span class="tm-punc">{</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"handle"</span><span class="tm-punc">:</span> <span class="tm-str">"@sahilxalone"</span><span class="tm-punc">,</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"role"</span><span class="tm-punc">:</span> <span class="tm-str">"Builder / Admin"</span><span class="tm-punc">,</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"api_hub"</span><span class="tm-punc">:</span> <span class="tm-str">"AllAPI"</span><span class="tm-punc">,</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"endpoints"</span><span class="tm-punc">:</span> <span class="tm-num">30</span><span class="tm-punc">,</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"keys_issued"</span><span class="tm-punc">:</span> <span class="tm-num">∞</span><span class="tm-punc">,</span></div>
+          <div>&nbsp;&nbsp;<span class="tm-key-c">"status"</span><span class="tm-punc">:</span> <span class="tm-bool">true</span></div>
+          <div><span class="tm-punc">}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CHANNELS -->
+<section id="channels">
+  <div class="section-eyebrow">community</div>
+  <h2 class="section-title">Join the network</h2>
+  <p class="section-sub">Get updates, support, and API keys through our Telegram channels.</p>
+
+  <div class="channels-grid">
+    <a href="https://t.me/sahilxalone" target="_blank" class="channel-card tg-main">
+      <div class="ch-icon c1"><i class="fa-brands fa-telegram"></i></div>
+      <div class="ch-info">
+        <div class="ch-name">Main Channel</div>
+        <div class="ch-desc">Updates, announcements, and new endpoint launches.</div>
+        <div class="ch-link"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px"></i> t.me/sahilxalone</div>
+      </div>
+      <i class="fa-solid fa-arrow-up-right-from-square ch-arrow"></i>
+    </a>
+
+    <a href="https://t.me/+YOUR_VIP_LINK" target="_blank" class="channel-card tg-vip">
+      <div class="ch-icon c2"><i class="fa-solid fa-crown"></i></div>
+      <div class="ch-info">
+        <div class="ch-name">VIP Group</div>
+        <div class="ch-desc">Exclusive access, premium API keys, and priority support.</div>
+        <div class="ch-link" style="color:var(--violet)"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px"></i> VIP Members</div>
+      </div>
+      <i class="fa-solid fa-arrow-up-right-from-square ch-arrow"></i>
+    </a>
+
+    <a href="https://t.me/sahilxalone" target="_blank" class="channel-card tg-dev">
+      <div class="ch-icon c3"><i class="fa-solid fa-terminal"></i></div>
+      <div class="ch-info">
+        <div class="ch-name">Dev &amp; Support</div>
+        <div class="ch-desc">Technical questions, integration help, and bug reports.</div>
+        <div class="ch-link" style="color:var(--emerald)"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px"></i> Get Support</div>
+      </div>
+      <i class="fa-solid fa-arrow-up-right-from-square ch-arrow"></i>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">
+    Built by <strong>@sahilxalone</strong> · AllAPI © <%= new Date().getFullYear() %>
+  </div>
+  <ul class="footer-links">
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="https://t.me/sahilxalone" target="_blank">Telegram</a></li>
+    <li><a href="/nazriya/login">Admin</a></li>
+  </ul>
+  <div class="footer-status">
+    <div class="sd"></div>
+    All systems operational
+  </div>
+</footer>
+
+<script>
+// Animate stats counter
+function animateNum(el, target, suffix) {
+  if (typeof target !== 'number') return;
+  var start = 0, duration = 1500, step = 16;
+  var timer = setInterval(function() {
+    start += Math.ceil(target / (duration / step));
+    if (start >= target) { start = target; clearInterval(timer); }
+    el.textContent = start + (suffix || '');
+  }, step);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var apiEl = document.getElementById('stat-apis');
+  var num   = parseInt(apiEl.textContent);
+  if (!isNaN(num)) animateNum(apiEl, num, '+');
+});
+</script>
 </body>
 </html>
